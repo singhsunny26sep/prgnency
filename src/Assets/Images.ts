@@ -1,0 +1,62 @@
+export const Images = {
+  CommonBG: require('../Assets/Image/BG.png'),
+
+  educationalresource: require('../Assets/Image/Login/educationalresource.png'),
+  safebump: require('../Assets/Image/Login/safebump.png'),
+  tracktools: require('../Assets/Image/Login/tracktools.png'),
+  Dreamchild: require('../Assets/Image/Login/Dreamchild.png'),
+
+  Logo: require('../Assets/Image/Login/Logo.png'),
+
+  roundBackgorundBlur: require('../Assets/Image/Components/roundBackgorundBlur.png'),
+  search: require('../Assets/Image/Components/search.png'),
+  notificationIcon: require('../Assets/Image/Components/notificationIcon.png'),
+
+  rightArrow: require('../Assets/Image/Components/right-arrow.png'),
+  edit: require('../Assets/Image/Components/edit.png'),
+  accept: require('../Assets/Image/Components/accept.png'),
+  editFrame: require('../Assets/Image/Components/EditFrame.png'),
+  call: require('../Assets/Image/Components/phone.png'),
+  mail: require('../Assets/Image/Components/mail.png'),
+  faq: require('../Assets/Image/Components/FAQ.png'),
+  message: require('../Assets/Image/Components/chat.png'),
+  send: require('../Assets/Image/Components/chain.png'),
+  navigation: require('../Assets/Image/Components/Navigation.png'),
+  supportIcon: require('../Assets/Image/Components/supportIcon.jpeg'),
+  language: require('../Assets/Image/Components/language.png'),
+  languages: require('../Assets/Image/Components/languages.png'),
+  newproduct: require('../Assets/Image/Components/newproduct.png'),
+  bottomBG: require('../Assets/Image/Components/bottomBG.png'),
+  terms: require('../Assets/Image/Components/terms.png'),
+  privacy: require('../Assets/Image/Components/privacy.png'),
+  setting: require('../Assets/Image/Components/Settings.png'),
+  
+
+  subscription: require('../Assets/Image/Components/subscription.png'),
+  logout: require('../Assets/Image/Components/logout.png'),
+  order: require('../Assets/Image/Components/order.png'),
+  changeLang: require('../Assets/Image/Components/changeLang.jpeg'),
+  product: require('../Assets/Image/Components/product.jpeg'),
+  poster2: require('../Assets/Image/Components/poster2.jpeg'),
+  poster3: require('../Assets/Image/Components/poster3.jpeg'),
+  click1: require('../Assets/Image/Components/click1.jpeg'),
+  click2: require('../Assets/Image/Components/click2.jpeg'),
+  click3: require('../Assets/Image/Components/click3.jpeg'),
+  click4: require('../Assets/Image/Components/click4.jpeg'),
+  Applogo: require('../Assets/Image/Components/Applogo.jpeg'),
+
+  tabMainIcon: require('../Assets/Image/TabBar/tabMainIcon.png'),
+  invest: require('../Assets/Image/TabBar/invest.png'),
+  investFilled: require('../Assets/Image/TabBar/investFilled.png'),
+  market: require('../Assets/Image/TabBar/market.png'),
+  marketFilled: require('../Assets/Image/TabBar/marketFilled.png'),
+  portfolio: require('../Assets/Image/TabBar/portfolio.png'),
+  portfolioFilled: require('../Assets/Image/TabBar/portfolioFilled.png'),
+  tabHomeFilled: require('../Assets/Image/TabBar/tabHomeFilled.png'),
+  tabHome: require('../Assets/Image/TabBar/tabHome.png'),
+
+  DummyImage: require('../Assets/Image/Home/PortImage.png'),
+  timer: require('../Assets/Image/Home/timer.png'),
+  
+  userAvatar: require('../Assets/Image/Profile/avatar.png'),
+};
