@@ -10,6 +10,7 @@ import {
   StyleSheet,
   Animated,
   KeyboardAvoidingView,
+  ActivityIndicator,
 } from 'react-native';
 import {KeyboardAwareScrollView} from 'react-native-keyboard-aware-scroll-view';
 import LinearGradient from 'react-native-linear-gradient';
@@ -30,37 +31,57 @@ export default function MobileNoVerify({navigation, route}) {
 
   const [otp, setOtp] = useState('');
   const [timeLeft, setTimeLeft] = useState(60);
+  const [loading, setLoading] = useState(false);
 
-  const onConfirm = async () => {
-    const payload = {
-      sessionId: details,
-      otp: otp,
-      mobile: mobile,
-    };
+  
 
-    try {
-      const response = await Instance.post(
-        '/api/users/mobile-otp-verify',
-        payload,
-      );
+const onConfirm = async () => {
+  if (!otp) {
+    console.warn('OTP is empty');
+    return;
+  }
 
-      if (response.data?.success && response.data?.token) {
-        await AsyncStorage.setItem('userToken', response.data.token);
-        console.log('Token saved:', response.data.token);
-        navigation.navigate('TabNavigator');
-      } else {
-        console.warn('Verification failed:', response.data?.msg);
-      }
-    } catch (error) {
-      console.error('API error:', error.message);
-    }
+  setLoading(true);
+
+  const formattedOtp = Array.isArray(otp) ? otp.join('') : otp;
+
+  const payload = {
+    sessionId: details,
+    otp: formattedOtp,
+    mobile: mobile,
   };
+
+  console.log('🔼 Sending payload:', JSON.stringify(payload, null, 2));
+
+  try {
+    const response = await Instance.post('api/users/mobile-otp-verify', payload);
+
+    console.log('API Response:', JSON.stringify(response.data, null, 2));
+
+    if (response.data?.success && response.data?.token) {
+      await AsyncStorage.setItem('userToken', response.data.token);
+      console.log('Token saved to AsyncStorage:', response.data.token);
+      navigation.navigate('TabNavigator');
+    } else {
+      console.warn('Verification failed:', response.data?.msg || 'Unknown error');
+    }
+  } catch (error) {
+    if (error.response) {
+      console.error('API Error Response:', JSON.stringify(error.response.data, null, 2));
+    } else if (error.request) {
+      console.error('No response received from API:', error.request);
+    } else {
+      console.error('Error in request setup:', error.message);
+    }
+  } finally {
+    setLoading(false);
+  }
+};
+
   const resendOtp = () => {
     setTimeLeft(60);
     console.log('OTP resent');
   };
-
-  const resetTimer = () => setTimeLeft(0);
 
   return (
     <LinearGradient
@@ -103,7 +124,11 @@ export default function MobileNoVerify({navigation, route}) {
             <TouchableOpacity
               style={styles.buttonContainer}
               onPress={onConfirm}>
-              <Text style={styles.buttonText}>Submit</Text>
+              {loading ? (
+                <ActivityIndicator color="#FFF" size='small'/>
+              ) : (
+                <Text style={styles.buttonText}>Submit</Text>
+              )}
             </TouchableOpacity>
           </View>
         </TouchableWithoutFeedback>
