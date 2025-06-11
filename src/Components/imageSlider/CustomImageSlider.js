@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, {useRef, useState, useEffect} from 'react';
 import {
   StyleSheet,
   View,
@@ -8,67 +8,85 @@ import {
   Animated,
 } from 'react-native';
 import { AllColors } from '../../Constants/COLORS';
-import { moderateScale, scale, verticalScale } from '../../Constants/Scalling';
+import { scale,verticalScale,moderateScale } from '../../Constants/Scalling';
 
-const { width } = Dimensions.get('window');
+const {width} = Dimensions.get('window');
 
-const CustomImageSlider = ({ images }) => {
+const staticBannerData = [
+  {
+    id: '1',
+    image: 'https://www.sresthagarbhsanskar.com/data1/images/banner-01.jpg', 
+  },
+  {
+    id: '2',
+    image: 'https://files.utsav.yoga/image/2024-04-25/Yoga_for_Women1714036726649.jpeg', 
+  },
+  {
+    id: '3',
+    image: 'https://www.shutterstock.com/image-vector/pregnant-woman-meditates-concept-yoga-260nw-2201418259.jpg', 
+  },
+];
+
+const CustomImageSlider = () => {
+  const [data] = useState(staticBannerData);
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef(null);
   const scrollX = useRef(new Animated.Value(0)).current;
 
-  const onViewableItemsChanged = useRef(({ viewableItems }) => {
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      if (data.length > 0) {
+        const nextIndex = (currentIndex + 1) % data.length;
+        flatListRef.current?.scrollToIndex({index: nextIndex, animated: true});
+        setCurrentIndex(nextIndex);
+      }
+    }, 3000);
+
+    return () => clearInterval(intervalId);
+  }, [currentIndex, data.length]);
+
+  const onViewableItemsChanged = useRef(({viewableItems}) => {
     if (viewableItems.length > 0) {
       setCurrentIndex(viewableItems[0].index);
     }
   });
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentIndex(prevIndex => {
-        const nextIndex = (prevIndex + 1) % images.length;
-        flatListRef.current.scrollToIndex({ index: nextIndex });
-        return nextIndex;
-      });
-    }, 3000); 
-
-    return () => clearInterval(interval); 
-  }, [images.length]);
-
-  const renderItem = ({ item }) => (
+  const renderItem = ({item}) => (
     <View style={styles.imageContainer}>
-      <Image resizeMode="cover" source={{ uri: item }} style={styles.image} />
+      <Image resizeMode="contain" source={{uri:item.image}} style={styles.image} />
     </View>
   );
 
   return (
     <View style={styles.container}>
-      <FlatList
-        ref={flatListRef}
-        data={images}
-        horizontal
-        pagingEnabled
-        removeClippedSubviews={false}
-        showsHorizontalScrollIndicator={false}
-        keyExtractor={(item, index) => index.toString()}
-        renderItem={renderItem}
-        onViewableItemsChanged={onViewableItemsChanged.current}
-        viewabilityConfig={{
-          itemVisiblePercentThreshold: 50,
-        }}
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { x: scrollX } } }],
-          { useNativeDriver: false }
-        )}
-      />
-      <View style={styles.pagination}>
-        {images.map((_, i) => (
-          <View
-            key={i.toString()}
-            style={[styles.dot, currentIndex === i && styles.activeDot]}
+        <>
+          <FlatList
+            ref={flatListRef}
+            data={data}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            keyExtractor={item => item.id.toString()}
+            renderItem={renderItem}
+            onViewableItemsChanged={onViewableItemsChanged.current}
+            viewabilityConfig={{
+              itemVisiblePercentThreshold: 50,
+            }}
+            onScroll={Animated.event(
+              [{nativeEvent: {contentOffset: {x: scrollX}}}],
+              {useNativeDriver: false},
+            )}
           />
-        ))}
-      </View>
+          <View style={styles.pagination}>
+            {data.map((_, i) => (
+              <View
+                key={i.toString()}
+                style={[styles.dot, currentIndex === i && styles.activeDot]}
+              />
+            ))}
+          </View>
+        </>
+      
     </View>
   );
 };
@@ -76,38 +94,48 @@ const CustomImageSlider = ({ images }) => {
 const styles = StyleSheet.create({
   container: {
     height: verticalScale(170),
-    marginTop: scale(8),
-    position: 'relative',
+    justifyContent: 'center',
   },
   imageContainer: {
-    width: width,
-    height: verticalScale(170),
+    width: width - 32,
+    height: scale(185),
     justifyContent: 'center',
     alignItems: 'center',
+    marginHorizontal: scale(15),
+    padding: scale(15),
+    borderRadius: scale(10),
     overflow: 'hidden',
   },
   image: {
-    width: '85%',
+    width: '100%',
     height: '100%',
+    borderRadius: scale(10),
     resizeMode: 'cover',
-    borderTopRightRadius: moderateScale(5),
-    borderTopLeftRadius: moderateScale(5),
   },
   pagination: {
     flexDirection: 'row',
     position: 'absolute',
-    bottom: verticalScale(10),
+    bottom: verticalScale(0),
     alignSelf: 'center',
   },
   dot: {
-    height: scale(12),
-    width: scale(12),
-    borderRadius: scale(20),
-    backgroundColor: AllColors.lightBlue,
-    marginHorizontal: scale(5),
+    height: scale(3),
+    width: scale(40),
+    borderRadius: moderateScale(10),
+    backgroundColor: 'gray',
+    marginHorizontal: scale(2),
   },
   activeDot: {
-    backgroundColor: AllColors.white,
+    backgroundColor: AllColors.babyPink,
+  },
+  shimmerWrapper: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: scale(10),
+  },
+  shimmerItem: {
+    width: (width - 54) / 2,
+    marginHorizontal: scale(8),
   },
 });
 

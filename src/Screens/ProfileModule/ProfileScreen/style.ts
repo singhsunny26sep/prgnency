@@ -35,7 +35,7 @@ export const styles = StyleSheet.create({
   eaderView: {
     flexDirection: 'row',
     height: metrics.hp12,
-    backgroundColor: AllColors.lightBlue,
+    backgroundColor: AllColors.babyPink,
     paddingTop: metrics.hp2,
     borderBottomEndRadius: metrics.hp20,
     borderTopStartRadius: metrics.hp20,
@@ -86,7 +86,7 @@ export const styles = StyleSheet.create({
     marginLeft: 16,
   },
   name: {
-    fontSize: fontSize(14),
+    fontSize: fontSize(15),
     color: AllColors.black,
     fontFamily: Fonts.AfacadBold,
   },

@@ -21,27 +21,35 @@ interface OnBoardingScreenProps {
   navigation: NavigationProp<any, any>;
 }
 
+interface SlideItem {
+  key: string;
+  title: string;
+  text: string;
+  image: any;
+  backgroundColor: string;
+}
+
 const OnBoardingScreen = (props: OnBoardingScreenProps) => {
-  const SLIDER_DATA = [
+  const SLIDER_DATA: SlideItem[] = [
     {
       key: '1',
       title: 'Welcome to My App',
       text: 'Discover new features and experiences.',
-      image: Images.educationalresource, // Replace with your image
+      image: Images.Logo,
       backgroundColor: '#FF7FA4',
     },
     {
       key: '2', 
       title: 'Easy to Use',
       text: 'Navigate seamlessly through the app.',
-      image: Images.tracktools, // Replace with your image
+      image: Images.garbha,
       backgroundColor: '#E6BBEF',
     },
     {
       key: '3',
       title: 'Stay Connected',
       text: 'Engage with friends and family effortlessly.',
-      image: Images.safebump, // Replace with your image
+      image: Images.Dreamchild,
       backgroundColor: '#BEE4F4',
     },
   ];
@@ -50,17 +58,28 @@ const OnBoardingScreen = (props: OnBoardingScreenProps) => {
     props.navigation.navigate('AskLoginScreen');
   };
 
+  const renderItem = ({item}: {item: SlideItem}) => {
+    return (
+      <LinearGradient
+        colors={['#fff', '#fff', '#A6D1E6']}
+        style={styles.slide}>
+        <View style={styles.contentContainer}>
+          <Text style={styles.title}>{item.title}</Text>
+          <Image source={item.image} style={styles.image}  />
+          <Text style={styles.text}>{item.text}</Text>
+        </View>
+      </LinearGradient>
+    );
+  };
+
   return (
     <AppIntroSlider
       data={SLIDER_DATA}
-      renderItem={({item}) => (
-         <LinearGradient
-                  colors={['#fff', '#fff', '#A6D1E6']} style={[styles.slide]}>
-          <Image source={item.image} style={styles.image} />
-        </LinearGradient>
-      )}
+      renderItem={renderItem}
       bottomButton
       onDone={onDone}
+      dotStyle={styles.dot}
+      activeDotStyle={styles.activeDot}
     />
   );
 };

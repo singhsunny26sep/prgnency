@@ -63,7 +63,7 @@ const AskLoginScreen = (props: AskLoginScreenProps) => {
           }
           style={[styles.button, styles.secondaryButton]}>
 
-          <Text style={styles.buttonText}>{strings.signup}</Text>
+          <Text style={styles.buttonText}>Register</Text>
         </TouchableOpacity>
         <Text style={styles.linkText}>
           {`Try another way? `}

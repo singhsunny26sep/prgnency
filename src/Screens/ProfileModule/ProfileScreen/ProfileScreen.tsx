@@ -207,8 +207,8 @@ const ProfileScreen = (props: ProfileScreenProps) => {
                 top: -metrics.hp2,
               }}
               resizeMode="contain"
-              source={{ uri: profile?.profilePic }}
-            />
+              source={profile?.profilePic ? { uri: profile.profilePic } : Images.userAvatar}
+            /> 
             <View style={styles.userInfo}>
               <Text style={styles.name}>{profile?.name || 'N/A'}</Text>
               <Text style={styles.email}>{profile?.mobile || '7096880152'}</Text>

@@ -1,9 +1,10 @@
-import {Dimensions, Platform, StyleSheet} from 'react-native';
-import {AllColors} from '../../../Constants/COLORS';
+import {StyleSheet, Dimensions} from 'react-native';
+import {Fonts, fontSize} from '../../../Constants/Fonts';
 import metrics from '../../../Constants/Metrics';
-import {Fonts} from '../../../Constants/Fonts';
+import {AllColors} from '../../../Constants/COLORS';
+import { scale } from '../../../Constants/Scalling';
 
-const width = Dimensions.get('window').width;
+const {width, height} = Dimensions.get('window');
 
 export const styles = StyleSheet.create({
   container: {
@@ -23,42 +24,96 @@ export const styles = StyleSheet.create({
 
   slide: {
     flex: 1,
-    justifyContent: 'center',
+    width: width,
+    height: height,
+  },
+  contentContainer: {
+    flex: 1,
     alignItems: 'center',
-    padding: 20,
+    justifyContent: 'center',
+    paddingHorizontal: 20,
   },
   image: {
-    width: 500,
-    height: 500,
-    resizeMode: 'contain',
+    width: scale(250),
+    height: scale(250),
+    marginBottom: 100,
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#fff',
+    fontSize: fontSize(28),
+    fontFamily: Fonts.AfacadBold,
+    color: '#333',
     textAlign: 'center',
-    marginVertical: 20,
+    marginBottom:scale(100),
   },
   text: {
-    fontSize: 16,
-    color: '#fff',
+    fontSize: fontSize(18),
+    color: '#666',
     textAlign: 'center',
-    marginHorizontal: 10,
+    lineHeight: 24,
+    marginBottom: 100,
+    fontFamily:Fonts.AfacadMedium
   },
-  touchView: {
-    width: '80%',
-    height: metrics.hp5_5,
-    borderRadius: metrics.hp1_5,
-    marginTop: metrics.hp3,
-    justifyContent: 'center',
-    alignSelf: 'center',
+  paginationContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#5B98E8',
+    paddingHorizontal: metrics.wp25,
+    paddingVertical: metrics.hp2,
+    width: '100%',
+    position: 'absolute',
+    bottom: 0,
+    backgroundColor: 'transparent',
   },
-  buttonInsideText: {
+  paginationDots: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    flex: 1,
+  },
+  nextButton: {
+    backgroundColor: AllColors.primary,
+    paddingVertical: metrics.hp2,
+    paddingHorizontal: metrics.wp25,
+    borderRadius: metrics.hp2,
+    minWidth: 80,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  skipButton: {
+    backgroundColor: 'transparent',
+    paddingVertical: metrics.hp2,
+    paddingHorizontal: metrics.wp25,
+    borderRadius: metrics.hp2,
+    minWidth: 80,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  nextButtonText: {
     fontSize: 16,
-    fontFamily: Fonts.AfacadMedium,
+    fontWeight: 'bold',
     color: AllColors.white,
-    fontWeight: '900',
+  },
+  skipButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: AllColors.primary,
+  },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+    marginHorizontal: 4,
+  },
+  activeDot: {
+    width: 20,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#A6D1E6',
   },
 });

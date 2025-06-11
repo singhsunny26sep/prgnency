@@ -57,6 +57,6 @@ export const Images = {
 
   DummyImage: require('../Assets/Image/Home/PortImage.png'),
   timer: require('../Assets/Image/Home/timer.png'),
-  
+  garbha:require('../Assets/Image/Login/Garbha.png'),
   userAvatar: require('../Assets/Image/Profile/avatar.png'),
 };

@@ -1,7 +1,7 @@
 import { io } from "socket.io-client";
 
 
-const SOCKET_URL = 'http://192.168.115.164:5580';
+const SOCKET_URL = 'https://dreamchild-62ce4a3c90d9.herokuapp.com';
 // const SOCKET_URL = 'https://ricedeal.onrender.com';
 
 

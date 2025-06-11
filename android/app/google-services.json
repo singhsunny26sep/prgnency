@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "124221626786",
+    "project_id": "dreamchild-d6639",
+    "storage_bucket": "dreamchild-d6639.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:124221626786:android:57a4865ef550eba0193afb",
+        "android_client_info": {
+          "package_name": "com.dreamchild"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA7H6S989wlIfOo80iFZEqi3cl50PjsS6Y"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
