@@ -19,19 +19,16 @@ import metrics from '../../../Constants/Metrics';
 import {_navigationRef} from '../../../Navigation/navigationRef';
 import {useEffect, useState} from 'react';
 import {launchCamera, launchImageLibrary} from 'react-native-image-picker';
-import {useSelector} from 'react-redux';
-import {RootState} from '../../../Redux';
 import strings from '../../../../localization';
 import { Container } from '../../../Components/Container/Container';
 import { AllColors } from '../../../Constants/COLORS';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Instance } from '../../../API/Instance';
+import {useSelector} from 'react-redux';
 
 interface ProfileScreenProps {
   navigation: NavigationProp<any, any>;
 }
-
- 
 
 interface JsData {
   address: {
@@ -58,6 +55,7 @@ interface JsData {
 const ProfileScreen = (props: ProfileScreenProps) => {
   const [profile, setProfile] = useState<JsData | null>(null);
   const [loading, setLoading] = useState(true);
+  const language = useSelector((state) => state.Common.language);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -115,9 +113,9 @@ const ProfileScreen = (props: ProfileScreenProps) => {
       onPress: () => props.navigation.navigate('Tearms_Condition'),
     },
     {
-      title: strings.Subscription,
+      title:'Session Video',
       iconName: Images.subscription,
-      onPress: () => console.log('Invite friends'),
+      onPress: () => props.navigation.navigate('Sessions'),
     },
     {
       title: strings.setting,

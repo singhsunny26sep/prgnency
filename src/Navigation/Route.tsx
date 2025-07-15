@@ -48,6 +48,8 @@ import FaqScreen from '../Screens/TabModule/MaketScreen/FaqScreen';
 import WhatsAppNotification from '../Screens/WhatsApp/WhatsAppNotification';
 import MobileNoLogin from '../Screens/LoginModule/MobileNoLogin/MobileNoLogin';
 import MobileNoVerify from '../Screens/LoginModule/MobileNoLogin/MobileNoVerify';
+import Sessions from '../Screens/ProfileModule/Sessions';
+import SessionDetails from '../Screens/ProfileModule/SessionDetails';
 
 const options2 = {
   headerShown: false,
@@ -285,9 +287,19 @@ export default function Route() {
             component={MobileNoLogin}
             options={options2}
           />
-             <StackObj.Screen
+            <StackObj.Screen
             name={'MobileNoVerify'}
             component={MobileNoVerify}
+            options={options2}
+          />
+            <StackObj.Screen
+            name={'Sessions'}
+            component={Sessions}
+            options={options2}
+          />
+          <StackObj.Screen
+            name={'SessionDetails'}
+            component={SessionDetails}
             options={options2}
           />
         </StackObj.Navigator>

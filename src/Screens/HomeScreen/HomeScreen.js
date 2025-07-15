@@ -33,6 +33,7 @@ import axios from 'axios';
 import {Instance} from '../../API/Instance';
 import CategoryList from '../../Components/Category/CategoryList';
 import SecondCategory from '../../Components/Category/SecondCategory';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const LoadingComponent = () => (
   <View style={styles.loadingContainer}>
@@ -50,6 +51,8 @@ export default function HomeScreen({navigation}) {
   const [raagSanskarData, setRaagSanskarData] = useState([]);
   const [garbhaSamvadData, setGarbhaSamvadData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [userName, setUserName] = useState('');
+  const [greeting, setGreeting] = useState('');
 
   useEffect(() => {
     const fetchNutritionData = async () => {
@@ -188,6 +191,38 @@ export default function HomeScreen({navigation}) {
     fetchGarbhaSamvadData();
   }, []);
 
+  useEffect(() => {
+    const fetchUserName = async () => {
+      try {
+        const token = await AsyncStorage.getItem('userToken');
+        if (!token) return;
+        const response = await Instance.get('/api/users/profile', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (response.data.success) {
+          const profile = response.data.data;
+          setUserName(profile.name || (profile.firstName ? `${profile.firstName} ${profile.lastName || ''}` : 'User'));
+        }
+      } catch (error) {
+        console.error('Error fetching user name:', error);
+      }
+    };
+    fetchUserName();
+  }, []);
+
+  useEffect(() => {
+    const hour = new Date().getHours();
+    if (hour >= 5 && hour < 12) {
+      setGreeting('Good morning');
+    } else if (hour >= 12 && hour < 17) {
+      setGreeting('Good afternoon');
+    } else if (hour >= 17 && hour < 21) {
+      setGreeting('Good evening');
+    } else {
+      setGreeting('Good night');
+    }
+  }, []);
+
   const renderItemRemedies = ({item}) => (
     <TouchableOpacity
       style={styles.remedyCard}
@@ -223,11 +258,12 @@ export default function HomeScreen({navigation}) {
       statusBarStyle={'dark-content'}
       statusBarBackgroundColor={AllColors.lightBlue}
       backgroundColor={AllColors.white}>
+        
       <View style={styles.headerView}>
         <CustomHeader
           type="home"
-          greeting={'Good morning'}
-          userName={`Test user`}
+          greeting={greeting}
+          userName={userName || 'User'}
           profilePicUrl="https://img.freepik.com/free-vector/bird-colorful-logo-gradient-vector_343694-1365.jpg?semt=ais_hybrid"
           onPressProfilePic={() => {
             navigation.navigate('ProfileScreen');

@@ -11,6 +11,7 @@ import {
   StyleSheet,
   ScrollView,
   ActivityIndicator, // Added ScrollView
+  Platform,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -77,13 +78,13 @@ const Signup = (props: Signupprops) => {
   // LMP Validation
   function onChangeLMP(text: string) {
     setUserLMP(text);
-    setUserLMPError(text ? '' : ""); 
+    setUserLMPError(text ? '' : "Please enter LMP date"); 
   }
 
   // EDD Validation
   function onChangeEDD(text: string) {
     setUserEDD(text);
-    setUserEDDError(text ? '' : ''); 
+    setUserEDDError(text ? '' : "Please enter EDD date"); 
   }
 
   async function registerUser() {
@@ -194,7 +195,7 @@ const Signup = (props: Signupprops) => {
             <View style={styles.inputContainer}>
               <TextInput
                 style={styles.input}
-                placeholder={strings.LMP}
+                placeholder="Enter LMP date (YYYY-MM-DD)"
                 placeholderTextColor="#999"
                 value={userLMP}
                 onChangeText={onChangeLMP}
@@ -208,7 +209,7 @@ const Signup = (props: Signupprops) => {
             <View style={styles.inputContainer}>
               <TextInput
                 style={styles.input}
-                placeholder={strings.EDD}
+                placeholder="Enter EDD date (YYYY-MM-DD)"
                 placeholderTextColor="#999"
                 value={userEDD}
                 onChangeText={onChangeEDD}
@@ -343,7 +344,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     alignItems: 'center',
     marginTop: 20,
-    height: metrics.hp7,
+    height: metrics.hp7, 
     shadowColor: '#000',
     shadowOpacity: 0.2,
     shadowOffset: { width: 0, height: 2 },
@@ -370,5 +371,8 @@ const styles = StyleSheet.create({
     marginTop: 10, // Adjust the space between the button and the loader
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  placeholder: {
+    color: '#999',
   },
 });
