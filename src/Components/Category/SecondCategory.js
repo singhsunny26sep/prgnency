@@ -11,7 +11,7 @@ import { verticalScale,scale,moderateScale } from '../../Constants/Scalling';
 import {AllColors} from '../../Constants/COLORS';
 import {Fonts} from '../../Constants/Fonts';
 
-const SecondCategory = ({navigation, routeName, data, title, onPressItem}) => {
+const SecondCategory = ({navigation, routeName, data, title, onPressItem, onPressSeeAll}) => {
   const renderItem = ({item}) => (
     <TouchableOpacity
       style={styles.card}
@@ -25,11 +25,14 @@ const SecondCategory = ({navigation, routeName, data, title, onPressItem}) => {
 
   return (
     <View>
-      <Text style={styles.Label}>{title}</Text>
+      <View style={styles.headerRow}>
+        <Text style={styles.Label}>{title}</Text>
+       
+      </View>
       <FlatList
         data={data}
         renderItem={renderItem}
-        keyExtractor={item => item.id?.toString()}
+        keyExtractor={(item, index) => item.id?.toString() || String(index)}
         contentContainerStyle={styles.flatListContainer}
       />
     </View>
@@ -37,21 +40,32 @@ const SecondCategory = ({navigation, routeName, data, title, onPressItem}) => {
 };
 
 const styles = StyleSheet.create({
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: scale(15),
+    marginTop: scale(8),
+  },
   Label: {
     fontFamily: Fonts.AfacadBold,
     fontSize: moderateScale(21),
-    paddingHorizontal: scale(15),
-    marginTop:scale(8)
+    paddingHorizontal: 0,
   },
   card: {
     flexDirection: 'row',
     backgroundColor: AllColors.white,
-    borderRadius: 10,
+    borderRadius: 12,
     marginBottom: verticalScale(10),
-    padding: scale(5),
+    padding: scale(8),
     alignItems: 'center',
-    borderWidth: 0.3,
-    marginHorizontal:scale(15)
+    borderWidth: 0,
+    marginHorizontal:scale(15),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
   image: {
     width: scale(80),
@@ -72,6 +86,11 @@ const styles = StyleSheet.create({
   },
   flatListContainer: {
     paddingTop: verticalScale(10),
+  },
+  seeAll: {
+    fontFamily: Fonts.AfacadBold,
+    fontSize: moderateScale(14),
+    color: AllColors.babyPink,
   },
 });
 

@@ -52,143 +52,35 @@ export default function HomeScreen({navigation}) {
   const [garbhaSamvadData, setGarbhaSamvadData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState('');
-  const [greeting, setGreeting] = useState('');
+  const [greeting, setGreeting] = useState(''); 
 
+  // Unified fetch for all sections
   useEffect(() => {
-    const fetchNutritionData = async () => {
+    let isActive = true;
+    const load = async () => {
       try {
         const response = await Instance.get('/api/medias-categories/images');
-        if (response.data.success) {
-          const nutritionData = response.data.data;
-          setNutritionData(nutritionData);
-          // nutritionData.forEach(item => {
-          //   console.log('Item ID: ', item._id);
-          // });
-        } else {
-          console.error('Failed to fetch data');
+        if (!isActive) return;
+        if (response.data?.success) {
+          const data = response.data.data || [];
+          setNutritionData(data);
+          setDailyMantrasData(data);
+          setHomeRemediesData(data);
+          setYogaData(data);
+          setDailyStoryData(data);
+          setRaagSanskarData(data);
+          setGarbhaSamvadData(data);
         }
       } catch (error) {
-        console.error('Error fetching data:', error);
+        console.error('Error fetching categories:', error);
       } finally {
-        setLoading(false);
+        if (isActive) setLoading(false);
       }
     };
-
-    fetchNutritionData();
-  }, []);
-
-  useEffect(() => {
-    const fetchDailyMantrasData = async () => {
-      try {
-        const response = await Instance.get('/api/medias-categories/images');
-        if (response.data.success) {
-          setDailyMantrasData(response.data.data);
-        } else {
-          console.error('Failed to fetch daily mantras');
-        }
-      } catch (error) {
-        console.error('Error fetching daily mantras:', error);
-      } finally {
-        setLoading(false);
-      }
+    load();
+    return () => {
+      isActive = false;
     };
-
-    fetchDailyMantrasData();
-  }, []);
-
-  useEffect(() => {
-    const fetchHomeRemediesData = async () => {
-      try {
-        const response = await Instance.get('/api/medias-categories/images');
-        if (response.data.success) {
-          setHomeRemediesData(response.data.data);
-        } else {
-          console.error('Failed to fetch home remedies');
-        }
-      } catch (error) {
-        console.error('Error fetching home remedies:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchHomeRemediesData();
-  }, []);
-
-  useEffect(() => {
-    const fetchYogaData = async () => {
-      try {
-        const response = await Instance.get('/api/medias-categories/images');
-        if (response.data.success) {
-          setYogaData(response.data.data);
-        } else {
-          console.error('Failed to fetch yoga data');
-        }
-      } catch (error) {
-        console.error('Error fetching yoga data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchYogaData();
-  }, []);
-
-  useEffect(() => {
-    const fetchDailyStoryData = async () => {
-      try {
-        const response = await Instance.get('/api/medias-categories/images');
-        if (response.data.success) {
-          setDailyStoryData(response.data.data);
-        } else {
-          console.error('Failed to fetch daily story data');
-        }
-      } catch (error) {
-        console.error('Error fetching daily story data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchDailyStoryData();
-  }, []);
-
-  useEffect(() => {
-    const fetchRaagSanskarData = async () => {
-      try {
-        const response = await Instance.get('/api/medias-categories/images');
-        if (response.data.success) {
-          setRaagSanskarData(response.data.data);
-        } else {
-          console.error('Failed to fetch raag sanskar data');
-        }
-      } catch (error) {
-        console.error('Error fetching raag sanskar data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchRaagSanskarData();
-  }, []);
-
-  useEffect(() => {
-    const fetchGarbhaSamvadData = async () => {
-      try {
-        const response = await Instance.get('/api/medias-categories/images');
-        if (response.data.success) {
-          setGarbhaSamvadData(response.data.data);
-        } else {
-          console.error('Failed to fetch garbha samvad data');
-        }
-      } catch (error) {
-        console.error('Error fetching garbha samvad data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchGarbhaSamvadData();
   }, []);
 
   useEffect(() => {
@@ -237,18 +129,6 @@ export default function HomeScreen({navigation}) {
           color={AllColors.gray}
           style={{top: 2, marginLeft: 10}}
         />
-      </View>
-    </TouchableOpacity>
-  );
-
-  const renderItemYoga = ({item}) => (
-    <TouchableOpacity
-      style={styles.yogaCard}
-      onPress={() => navigation.navigate('YogaDetails', {YogaData: item})}>
-      <Image source={{uri: item.url}} style={styles.yogaImage} />
-      <View style={styles.yogaDetails}>
-        <Text style={styles.yogaTitle}>{item.title}</Text>
-        {/* <Text style={styles.yogaType}>{item.type}</Text> */}
       </View>
     </TouchableOpacity>
   );
@@ -314,17 +194,12 @@ export default function HomeScreen({navigation}) {
         {loading ? (
           <LoadingComponent />
         ) : (
-          <View style={styles.CategoryMainView}>
-            <Text style={styles.Label}>Yoga & Exercises</Text>
-            <FlatList
-              data={yogaData}
-              renderItem={renderItemYoga}
-              keyExtractor={item => item.id?.toString()}
-              horizontal={true}
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.flatListContainer}
-            />
-          </View>
+          <CategoryList
+            data={yogaData}
+            title="Yoga & Exercises"
+            navigation={navigation}
+            routeName="YogaDetails"
+          />
         )}
         {loading ? (
           <LoadingComponent />
@@ -382,6 +257,7 @@ const styles = StyleSheet.create({
   scrollView: {
     flexGrow: 1,
   },
+
   CategoryMainView: {
     marginTop: scale(10),
   },
@@ -435,42 +311,7 @@ const styles = StyleSheet.create({
     color: AllColors.black,
     flex: 1,
   },
-  yogaCard: {
-    width: scale(150),
-    marginRight: scale(15),
-    backgroundColor: AllColors.white,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderRadius: 5,
-    borderColor: 'grey',
-  },
-  yogaImage: {
-    width: '100%',
-    height: verticalScale(90),
-    borderTopLeftRadius: 5,
-    borderTopRightRadius: 5,
-    resizeMode: 'contain',
-    marginTop: 10,
-  },
-  yogaDetails: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingTop: scale(5),
-    paddingBottom: scale(10),
-  },
-  yogaTitle: {
-    fontFamily: Fonts.AfacadBold,
-    fontSize: moderateScale(16),
-    color: AllColors.black,
-    textAlign: 'center',
-  },
-  yogaType: {
-    fontFamily: Fonts.AfacadRegular,
-    fontSize: moderateScale(14),
-    color: AllColors.gray,
-    textAlign: 'center',
-  },
+
   garbhaCard: {
     flexDirection: 'row',
     backgroundColor: AllColors.white,
