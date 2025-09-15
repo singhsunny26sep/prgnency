@@ -1,4 +1,4 @@
-package com.dreamchild
+package com.hiranyagarbh
 
 import android.app.Application
 import com.facebook.react.PackageList

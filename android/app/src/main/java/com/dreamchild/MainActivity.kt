@@ -1,4 +1,4 @@
-package com.dreamchild
+package com.hiranyagarbh
 
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate
