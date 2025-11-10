@@ -83,16 +83,14 @@ export default StyleSheet.create({
     flexDirection: 'row',
     alignSelf: 'center',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: scale(15),
   },
   investSubHeader: {
     height: '100%',
-    width: '60%',
-    marginLeft: metrics.hp1,
     flexDirection: 'row',
-    alignSelf: 'center',
-    flex: 0.7,
     alignItems: 'center',
+    flex: 1,
   },
   profileImage: {
     width: metrics.hp6,
@@ -112,11 +110,14 @@ export default StyleSheet.create({
   },
   searchMainView: {
     height: '100%',
-    width: '40%',
     flexDirection: 'row',
-    alignSelf: 'flex-start',
-    flex: 0.23,
     alignItems: 'center',
-    justifyContent: 'flex-start',
+    justifyContent: 'flex-end',
+    gap: scale(15),
+  },
+  iconButton: {
+    padding: scale(8),
+    borderRadius: scale(20),
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
   },
 });

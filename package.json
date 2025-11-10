@@ -1,13 +1,14 @@
 {
   "name": "HiranyaGarbh",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
     "android": "react-native run-android",
     "ios": "react-native run-ios",
     "lint": "eslint .",
     "start": "react-native start",
-    "test": "jest"
+    "test": "jest",
+    "sync-versions": "node scripts/sync-versions.js"
   },
   "dependencies": {
     "@notifee/react-native": "^9.1.8",

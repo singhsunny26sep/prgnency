@@ -9,7 +9,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:124221626786:android:57a4865ef550eba0193afb",
         "android_client_info": {
-          "package_name": "com.dreamchild"
+          "package_name": "com.hiranyagarbh"
         }
       },
       "oauth_client": [],
@@ -21,7 +21,7 @@
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": []
-        }
+        } 
       }
     }
   ],

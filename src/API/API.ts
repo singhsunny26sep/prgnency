@@ -1,8 +1,7 @@
 import axios, { AxiosError, AxiosResponse } from 'axios';
-import { URL } from './DefaultURL';
+import { Instance } from './Instance';
 
-export const api = axios.create();
-api.defaults.baseURL = URL.Web_url;
+export const api = Instance;
 api.defaults.headers.post['Content-Type'] = 'multipart/form-data';
 api.defaults.headers.post['Accept'] = 'application/json';
 
@@ -28,9 +27,10 @@ function onSuccess(response: AxiosResponse) {
 }
 
 export const Services = {
-    signUp: (data: any) => api.post("/api/users/sign-in", data).then(onSuccess, onError),
-    verifyOtp: (data: any) => api.post("/api/users/verify-otp", data).then(onSuccess, onError),
-    logoutApp: (data: any) => api.post("/auth/logoutApp", data).then(onSuccess, onError),
-}
+     signUp: (data: any) => api.post("/api/users/sign-in", data).then(onSuccess, onError),
+     verifyOtp: (data: any) => api.post("/api/users/verify-otp", data).then(onSuccess, onError),
+     logoutApp: (data: any) => api.post("/auth/logoutApp", data).then(onSuccess, onError),
+     checkAppUpdate: (data: any) => api.post("/api/app/check-update", data).then(onSuccess, onError),
+ }
 
 //Logs

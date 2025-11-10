@@ -23,7 +23,7 @@ export default function Sessions({navigation}) {
       if (pageToFetch === 1) setLoading(true);
       else setLoadingMore(true);
 
-      const response = await Instance.get(`api/youtube/pagination?page=${pageToFetch}&limit=${limit}`);
+      const response = await Instance.get(`/api/youtube/pagination?page=${pageToFetch}&limit=${limit}`);
       if (response.data && response.data.success) {
         if (pageToFetch === 1) {
           setVideos(response.data.data);
@@ -36,7 +36,8 @@ export default function Sessions({navigation}) {
         setError('No videos found');
       }
     } catch (err) {
-      setError('Failed to fetch videos');
+      console.error('Error fetching videos:', err);
+      setError('Failed to fetch videos. Please check your internet connection.');
     } finally {
       setLoading(false);
       setLoadingMore(false);
@@ -68,10 +69,22 @@ export default function Sessions({navigation}) {
 
   if (loading) {
     return (
-      <Container>
-        <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
+      <Container
+        statusBarStyle={'dark-content'}
+        statusBarBackgroundColor={AllColors.lightBlue}
+        backgroundColor={AllColors.white}>
+        <View style={styles.headerView}>
+          <CustomHeader
+            type="back"
+            screenName={'Session Videos'}
+            onPressBack={() => {
+              navigation.goBack();
+            }}
+          />
+        </View>
+        <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={AllColors.lightBlue} />
-          <Text style={{textAlign:"center",fontFamily:Fonts.AfacadBold}}>Loading...</Text>
+          <Text style={styles.loadingText}>Loading videos...</Text>
         </View>
       </Container>
     );
@@ -79,8 +92,26 @@ export default function Sessions({navigation}) {
 
   if (error) {
     return (
-      <Container>
-        <Text>{error}</Text>
+      <Container
+        statusBarStyle={'dark-content'}
+        statusBarBackgroundColor={AllColors.lightBlue}
+        backgroundColor={AllColors.white}>
+        <View style={styles.headerView}>
+          <CustomHeader
+            type="back"
+            screenName={'Session Videos'}
+            onPressBack={() => {
+              navigation.goBack();
+            }}
+          />
+        </View>
+        <View style={styles.errorContainer}>
+          <MaterialIcons name="error-outline" size={48} color={AllColors.red} />
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={() => fetchVideos(1)}>
+            <Text style={styles.retryText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
       </Container>
     );
   }
@@ -152,5 +183,47 @@ const styles = StyleSheet.create({
   },
   arrow: {
     marginLeft: 10,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  errorText: {
+    fontSize: moderateScale(16),
+    fontFamily: Fonts.AfacadMedium,
+    color: AllColors.black,
+    textAlign: 'center',
+    marginTop: 16,
+    marginBottom: 24,
+  },
+  retryButton: {
+    backgroundColor: AllColors.lightBlue,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  retryText: {
+    fontSize: moderateScale(16),
+    fontFamily: Fonts.AfacadBold,
+    color: AllColors.white,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: moderateScale(16),
+    fontFamily: Fonts.AfacadBold,
+    color: AllColors.black,
+    textAlign: 'center',
   },
 });

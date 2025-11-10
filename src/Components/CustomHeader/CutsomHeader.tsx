@@ -84,13 +84,13 @@ export const CustomHeader: React.FC<props> = ({
             </View>
           </View>
           <View style={style.searchMainView}>
-            <TouchableOpacity onPress={onPressChatIcon}>
+            <TouchableOpacity onPress={onPressChatIcon} style={style.iconButton}>
               <Image
                 source={Images.message}
                 style={style.searchImage}
               />
             </TouchableOpacity>
-            <TouchableOpacity onPress={onPressNotificationIcon}>
+            <TouchableOpacity onPress={onPressNotificationIcon} style={style.iconButton}>
               <Image
                 source={Images.notificationIcon}
                 style={style.notificationImage}

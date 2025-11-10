@@ -1,0 +1,27 @@
+{
+  "name": "update-service",
+  "version": "1.0.0",
+  "description": "Update service for HiranyaGarbh app",
+  "main": "UpdateService.js",
+  "scripts": {
+    "start": "node UpdateService.js",
+    "dev": "nodemon UpdateService.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "keywords": [
+    "update-service",
+    "nodejs",
+    "express"
+  ],
+  "author": "HiranyaGarbh Team",
+  "license": "MIT"
+}

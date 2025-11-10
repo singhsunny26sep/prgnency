@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   View,
   Text,
@@ -32,8 +32,18 @@ export default function MobileNoVerify({navigation, route}) {
   const [otp, setOtp] = useState('');
   const [timeLeft, setTimeLeft] = useState(60);
   const [loading, setLoading] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
 
-  
+  // Timer countdown effect
+  useEffect(() => {
+    if (timeLeft <= 0) return;
+
+    const timer = setInterval(() => {
+      setTimeLeft(prev => prev - 1);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [timeLeft]);
 
 const onConfirm = async () => {
   if (!otp) {
@@ -49,21 +59,22 @@ const onConfirm = async () => {
     sessionId: details,
     otp: formattedOtp,
     mobile: mobile,
+     fcmToken: "jnxjwsscwdiicwdic"
   };
 
   console.log('🔼 Sending payload:', JSON.stringify(payload, null, 2));
 
   try {
-    const response = await Instance.post('api/users/mobile-otp-verify', payload);
-
+    const response = await Instance.put('/api/users/verify-otp-mobile', payload);
     console.log('API Response:', JSON.stringify(response.data, null, 2));
-
+    console.log(response)
     if (response.data?.success && response.data?.token) {
       await AsyncStorage.setItem('userToken', response.data.token);
       console.log('Token saved to AsyncStorage:', response.data.token);
       navigation.navigate('TabNavigator');
     } else {
       console.warn('Verification failed:', response.data?.msg || 'Unknown error');
+      alert(response.data?.msg || 'OTP verification failed. Please try again.');
     }
   } catch (error) {
     if (error.response) {
@@ -78,9 +89,24 @@ const onConfirm = async () => {
   }
 };
 
-  const resendOtp = () => {
-    setTimeLeft(60);
-    console.log('OTP resent');
+  const resendOtp = async () => {
+    setResendLoading(true);
+    try {
+      const response = await Instance.post('/api/users/login-with-mobile', {
+        mobile: mobile,
+      });
+
+      if (response.data.success) {
+        setTimeLeft(60);
+        console.log('OTP resent successfully');
+      } else {
+        console.warn('Failed to resend OTP:', response.data.msg || 'Unknown error');
+      }
+    } catch (error) {
+      console.error('Error resending OTP:', error.response?.data || error.message);
+    } finally {
+      setResendLoading(false);
+    }
   };
 
   return (
@@ -116,9 +142,15 @@ const onConfirm = async () => {
                 Resend OTP in {timeLeft} seconds...
               </Text>
             ) : (
-              <Text style={styles.phoneNumberText} onPress={resendOtp}>
-                {strings.ResendOTP}
-              </Text>
+              <TouchableOpacity onPress={resendOtp} disabled={resendLoading}>
+                {resendLoading ? (
+                  <ActivityIndicator color="#4A90E2" size="small" />
+                ) : (
+                  <Text style={styles.phoneNumberText}>
+                    {strings.ResendOTP}
+                  </Text>
+                )}
+              </TouchableOpacity>
             )}
 
             <TouchableOpacity

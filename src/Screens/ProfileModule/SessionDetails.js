@@ -21,9 +21,8 @@ export default function SessionDetails({route, navigation}) {
 
   return (
     <Container
-      statusBarStyle={'dark-content'}
-      statusBarBackgroundColor={AllColors.lightBlue}
       backgroundColor={AllColors.white}>
+      <View style={styles.headerView}>
         <CustomHeader
           type="back"
           screenName={video.title}
@@ -31,12 +30,21 @@ export default function SessionDetails({route, navigation}) {
             navigation.goBack();
           }}
         />
+      </View>
       <View style={styles.videoContainer}>
         <WebView
           source={{uri: video.url}}
           style={styles.webview}
           javaScriptEnabled={true}
           domStorageEnabled={true}
+          onError={(syntheticEvent) => {
+            const { nativeEvent } = syntheticEvent;
+            console.warn('WebView error: ', nativeEvent);
+          }}
+          onHttpError={(syntheticEvent) => {
+            const { nativeEvent } = syntheticEvent;
+            console.warn('WebView HTTP error: ', nativeEvent.statusCode);
+          }}
         />
         <View style={styles.infoContainer}>
           <Text style={styles.title}>{video.title}</Text>

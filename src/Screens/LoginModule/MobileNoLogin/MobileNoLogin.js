@@ -1,3 +1,4 @@
+
 import React, {useState} from 'react';
 import {
   View,
@@ -27,7 +28,7 @@ export default function MobileNoLogin({navigation}) {
     }
     setLoading(true);
     try {
-      const response = await Instance.post('/api/users/mobile-otp-request', {
+      const response = await Instance.post('/api/users/login-with-mobile', {
         mobile: mobileNumber,
       });
 

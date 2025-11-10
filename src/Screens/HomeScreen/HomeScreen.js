@@ -122,12 +122,12 @@ export default function HomeScreen({navigation}) {
         navigation.navigate('RemediesDetails', {remedyData: item})
       }>
       <View style={styles.remedyContent}>
-        <Text style={styles.remedyTitle}>{item.title}</Text>
+        <Text style={styles.remedyTitle} numberOfLines={2}>{item.title}</Text>
         <Icon
           name="chevron-forward-outline"
-          size={22}
+          size={moderateScale(22)}
           color={AllColors.gray}
-          style={{top: 2, marginLeft: 10}}
+          style={{top: 2, marginLeft: scale(10)}}
         />
       </View>
     </TouchableOpacity>
@@ -135,11 +135,10 @@ export default function HomeScreen({navigation}) {
 
   return (
     <Container
-      statusBarStyle={'dark-content'}
-      statusBarBackgroundColor={AllColors.lightBlue}
       backgroundColor={AllColors.white}>
         
       <View style={styles.headerView}>
+        <View style={styles.gradientOverlay} />
         <CustomHeader
           type="home"
           greeting={greeting}
@@ -154,88 +153,93 @@ export default function HomeScreen({navigation}) {
         />
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollView}>
-        <CustomImageSlider images={imageUrls} />
+      <ScrollView contentContainerStyle={styles.scrollView} showsVerticalScrollIndicator={false}>
+        <View style={styles.sliderContainer}>
+          <CustomImageSlider images={imageUrls} />
+        </View>
 
-        {loading ? (
-          <LoadingComponent />
-        ) : (
-          <CategoryList
-            data={nutritionData}
-            title="Nutrition and Diet"
-            navigation={navigation}
-            routeName="NutritionDetails"
-          />
-        )}
+        <View style={styles.contentContainer}>
+          {loading ? (
+            <LoadingComponent />
+          ) : (
+            <CategoryList
+              data={nutritionData}
+              title="Nutrition and Diet"
+              navigation={navigation}
+              routeName="NutritionDetails"
+            />
+          )}
 
-        {loading ? (
-          <LoadingComponent />
-        ) : (
-          <CategoryList
-            data={dailyMantrasData}
-            title="Daily mantras and chants"
-            navigation={navigation}
-            routeName="MantrasandChantsDetails"
-          />
-        )}
+          {loading ? (
+            <LoadingComponent />
+          ) : (
+            <CategoryList
+              data={dailyMantrasData}
+              title="Daily mantras and chants"
+              navigation={navigation}
+              routeName="MantrasandChantsDetails"
+            />
+          )}
 
-        {loading ? (
-          <LoadingComponent />
-        ) : (
-          <CategoryList
-            data={homeRemediesData}
-            title="Home Remedies"
-            navigation={navigation}
-            routeName="RemediesDetails"
-            customRenderItem={renderItemRemedies}
-          />
-        )}
+          {loading ? (
+            <LoadingComponent />
+          ) : (
+            <CategoryList
+              data={homeRemediesData}
+              title="Home Remedies"
+              navigation={navigation}
+              routeName="RemediesDetails"
+              customRenderItem={renderItemRemedies}
+            />
+          )}
 
-        {loading ? (
-          <LoadingComponent />
-        ) : (
-          <CategoryList
-            data={yogaData}
-            title="Yoga & Exercises"
-            navigation={navigation}
-            routeName="YogaDetails"
-          />
-        )}
-        {loading ? (
-          <LoadingComponent />
-        ) : (
-          <SecondCategory
-            title="Daily Story"
-            data={dailyStoryData}
-            navigation={navigation}
-            routeName="DailyStoryDetails"
-            onPressItem={(item) => navigation.navigate('DailyStoryDetails', { dailydetailsData: item })}
-          />
-        )}
+          {loading ? (
+            <LoadingComponent />
+          ) : (
+            <CategoryList
+              data={yogaData}
+              title="Yoga & Exercises"
+              navigation={navigation}
+              routeName="YogaDetails"
+            />
+          )}
 
-        {loading ? (
-          <LoadingComponent />
-        ) : (
-          <SecondCategory
-            title="Raag Sanskar"
-            data={raagSanskarData}
-            navigation={navigation}
-            routeName="RaagSanskarDetails"
-            onPressItem={(item) => navigation.navigate('RaagSanskarDetails', { RaagSanskarData: item })}
-          />
-        )}
+          {loading ? (
+            <LoadingComponent />
+          ) : (
+            <SecondCategory
+              title="Daily Story"
+              data={dailyStoryData}
+              navigation={navigation}
+              routeName="DailyStoryDetails"
+              onPressItem={(item) => navigation.navigate('DailyStoryDetails', { dailydetailsData: item })}
+            />
+          )}
 
-        {loading ? (
-          <LoadingComponent />
-        ) : (
-          <SecondCategory
-            title="Garbha Samvad"
-            data={garbhaSamvadData}
-            navigation={navigation}
-            routeName="GarbhaSmvadDetails"
-            onPressItem={(item) => navigation.navigate('GarbhaSmvadDetails', { GarbhaData: item })}
-          />
-        )}
+          {loading ? (
+            <LoadingComponent />
+          ) : (
+            <SecondCategory
+              title="Raag Sanskar"
+              data={raagSanskarData}
+              navigation={navigation}
+              routeName="RaagSanskarDetails"
+              onPressItem={(item) => navigation.navigate('RaagSanskarDetails', { RaagSanskarData: item })}
+            />
+          )}
+
+          {loading ? (
+            <LoadingComponent />
+          ) : (
+            <SecondCategory
+              title="Garbha Samvad"
+              data={garbhaSamvadData}
+              navigation={navigation}
+              routeName="GarbhaSmvadDetails"
+              onPressItem={(item) => navigation.navigate('GarbhaSmvadDetails', { GarbhaData: item })}
+            />
+          )}
+        </View>
       </ScrollView>
     </Container>
   );
@@ -254,8 +258,24 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2, // iOS
     shadowRadius: 4, // iOS
   },
+  gradientOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderBottomEndRadius: metrics.hp20,
+    borderRadius: 10,
+  },
   scrollView: {
     flexGrow: 1,
+  },
+  sliderContainer: {
+    marginBottom: verticalScale(10),
+  },
+  contentContainer: {
+    paddingHorizontal: scale(5),
   },
 
   CategoryMainView: {
@@ -295,21 +315,29 @@ const styles = StyleSheet.create({
   remedyCard: {
     marginRight: scale(15),
     backgroundColor: '#fadadd',
-    borderRadius: 12,
+    borderRadius: moderateScale(12),
     padding: scale(12),
     justifyContent: 'center',
     alignItems: 'flex-start',
+    minHeight: verticalScale(60),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   remedyContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    width: '100%',
   },
   remedyTitle: {
     fontFamily: Fonts.AfacadRegular,
     fontSize: moderateScale(16),
     color: AllColors.black,
     flex: 1,
+    lineHeight: moderateScale(20),
   },
 
   garbhaCard: {
