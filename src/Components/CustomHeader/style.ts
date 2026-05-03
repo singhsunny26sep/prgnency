@@ -18,12 +18,13 @@ export default StyleSheet.create({
   searchImage: {
     width: scale(28),
     height: scale(28),
-    right:scale(10)
+    right:scale(10),
   },
   notificationImage: {
     width: metrics.hp3,
     height: metrics.hp3,
     borderRadius: metrics.hp2_5,
+    tintColor: AllColors.white,
   },
   touchBack: {
     height: metrics.hp4_5,
@@ -97,16 +98,25 @@ export default StyleSheet.create({
     height: metrics.hp6,
     borderRadius: metrics.hp3,
     alignItems: 'center',
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.5)',
   },
   userFonts: {
     fontFamily: Fonts.AfacadBold,
-    fontSize: fontSize(14),
-    color: AllColors.black,
+    fontSize: fontSize(16),
+    color: AllColors.white,
+    textShadowColor: 'rgba(0, 0, 0, 0.1)',
+    textShadowOffset: {width: 1, height: 1},
+    textShadowRadius: 2,
   },
   userSubFont: {
     fontFamily: Fonts.AfacadMedium,
-    fontSize: fontSize(12),
-    color: AllColors.black,
+    fontSize: fontSize(13),
+    color: AllColors.white,
+    opacity: 0.95,
+    textShadowColor: 'rgba(0, 0, 0, 0.1)',
+    textShadowOffset: {width: 1, height: 1},
+    textShadowRadius: 2,
   },
   searchMainView: {
     height: '100%',
@@ -118,6 +128,6 @@ export default StyleSheet.create({
   iconButton: {
     padding: scale(8),
     borderRadius: scale(20),
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
   },
 });

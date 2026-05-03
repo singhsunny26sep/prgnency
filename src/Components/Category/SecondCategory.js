@@ -21,13 +21,15 @@ const SecondCategory = ({navigation, routeName, data, title, onPressItem, onPres
         <Text style={styles.title}>{item.title}</Text>
       </View>
     </TouchableOpacity>
-  );  
+  );
 
   return (
     <View>
       <View style={styles.headerRow}>
         <Text style={styles.Label}>{title}</Text>
-       
+        <TouchableOpacity onPress={onPressSeeAll}>
+          <Text style={styles.seeAll}>See All</Text>
+        </TouchableOpacity>
       </View>
       <FlatList
         data={data}
@@ -52,31 +54,32 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.AfacadBold,
     fontSize: moderateScale(21),
     paddingHorizontal: 0,
+    color: AllColors.text900,
   },
   card: {
     flexDirection: 'row',
     backgroundColor: AllColors.white,
-    borderRadius: 16,
+    borderRadius: 20,
     marginBottom: verticalScale(12),
-    padding: scale(12),
+    padding: scale(15),
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(173, 216, 230, 0.3)',
-    marginHorizontal:scale(15),
+    borderColor: 'rgba(173, 216, 230, 0.4)',
+    marginHorizontal: scale(15),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
+    shadowOffset: {width: 0, height: 8},
     shadowOpacity: 0.12,
-    shadowRadius: 10,
-    elevation: 5,
+    shadowRadius: 15,
+    elevation: 8,
   },
   image: {
-    width: scale(85),
-    height: verticalScale(85),
-    borderRadius: 12,
-    marginRight: scale(12),
+    width: scale(80),
+    height: verticalScale(80),
+    borderRadius: 15,
+    marginRight: scale(15),
     resizeMode: 'cover',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
@@ -98,7 +101,7 @@ const styles = StyleSheet.create({
   seeAll: {
     fontFamily: Fonts.AfacadBold,
     fontSize: moderateScale(14),
-    color: AllColors.babyPink,
+    color: AllColors.primary400,
   },
 });
 

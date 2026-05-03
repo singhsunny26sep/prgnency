@@ -14,6 +14,7 @@ export const AllColors = {
   babyPink: '#FFC0CB',
   babyYellow: '#FFFACD',
   lightBlue: '#ADD8E6',
+  gray: '#898989',
 
   //text
   text50: '#F4F4F6',

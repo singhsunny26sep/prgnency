@@ -15,15 +15,15 @@ const {width} = Dimensions.get('window');
 const staticBannerData = [
   {
     id: '1',
-    image: 'https://www.sresthagarbhsanskar.com/data1/images/banner-01.jpg', 
+    image: 'https://www.sresthagarbhsanskar.com/data1/images/banner-01.jpg',
   },
   {
     id: '2',
-    image: 'https://files.utsav.yoga/image/2024-04-25/Yoga_for_Women1714036726649.jpeg', 
+    image: 'https://files.utsav.yoga/image/2024-04-25/Yoga_for_Women1714036726649.jpeg',
   },
   {
     id: '3',
-    image: 'https://www.shutterstock.com/image-vector/pregnant-woman-meditates-concept-yoga-260nw-2201418259.jpg', 
+    image: 'https://www.shutterstock.com/image-vector/pregnant-woman-meditates-concept-yoga-260nw-2201418259.jpg',
   },
 ];
 
@@ -86,47 +86,55 @@ const CustomImageSlider = () => {
             ))}
           </View>
         </>
-      
+
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    height: verticalScale(170),
+    height: verticalScale(180),
     justifyContent: 'center',
   },
   imageContainer: {
     width: width - 32,
-    height: scale(185),
+    height: verticalScale(170),
     justifyContent: 'center',
     alignItems: 'center',
-    marginHorizontal: scale(15),
-    padding: scale(15),
-    borderRadius: scale(10),
+    marginHorizontal: scale(16),
+    borderRadius: scale(20),
     overflow: 'hidden',
+    backgroundColor: AllColors.white,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 8},
+    shadowOpacity: 0.15,
+    shadowRadius: 15,
+    elevation: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(173, 216, 230, 0.2)',
   },
   image: {
     width: '100%',
     height: '100%',
-    borderRadius: scale(10),
+    borderRadius: scale(20),
     resizeMode: 'cover',
   },
   pagination: {
     flexDirection: 'row',
     position: 'absolute',
-    bottom: verticalScale(0),
+    bottom: verticalScale(15),
     alignSelf: 'center',
   },
   dot: {
-    height: scale(3),
-    width: scale(40),
+    height: scale(4),
+    width: scale(24),
     borderRadius: moderateScale(10),
-    backgroundColor: 'gray',
-    marginHorizontal: scale(2),
+    backgroundColor: 'rgba(255,255,255,0.5)',
+    marginHorizontal: scale(3),
   },
   activeDot: {
-    backgroundColor: AllColors.babyPink,
+    backgroundColor: AllColors.primary400,
+    width: scale(30),
   },
   shimmerWrapper: {
     flexDirection: 'row',

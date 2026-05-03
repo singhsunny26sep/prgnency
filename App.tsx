@@ -60,7 +60,7 @@
 
 // export default App;
 import React, { useEffect } from 'react';
-import { View, StatusBar } from 'react-native';
+import { View } from 'react-native';
 import Route from './src/Navigation/Route';
 import { Provider, useSelector } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
@@ -87,7 +87,6 @@ const AppContent: React.FC = () => {
 
   return (
     <View style={{ flex: 1 }}>
-      <StatusBar barStyle="dark-content" backgroundColor="#ADD8E6" />
       <Route />
       <UpdatePopup
         visible={showUpdatePopup}
