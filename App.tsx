@@ -22,7 +22,7 @@
 //   const persistConfig = {
 //     key: 'root',
 //     storage: AsyncStorage,
-//     whitelist: ['language'], 
+//     whitelist: ['language'],
 //   };
 
 //   const reducers = combineReducers({Common});
@@ -59,10 +59,11 @@
 // }
 
 // export default App;
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View } from 'react-native';
+import { gestureHandlerRootHOC } from 'react-native-gesture-handler';
 import Route from './src/Navigation/Route';
-import { Provider, useSelector } from 'react-redux';
+import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
 import { persistStore, persistReducer } from 'redux-persist';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -72,25 +73,19 @@ import strings from './localization';
 import NotificationService from './src/services/NotificationService';
 import { checkForUpdates, checkDismissedUpdate } from './src/Redux/UpdateActions';
 import UpdatePopup from './src/Components/UpdatePopup/UpdatePopup';
+import { AuthProvider } from './src/Context/AuthContext';
 
 // Inner component that uses Redux hooks
 const AppContent: React.FC = () => {
-  const updateInfo = useSelector((state: any) => state.Common.updateInfo);
-  const updateDismissed = useSelector((state: any) => state.Common.updateDismissed);
-
-  const handleCloseUpdate = () => {
-    // Update popup will handle dismissal internally
-  };
-
-  // Show popup if update is available and not dismissed
-  const showUpdatePopup = updateInfo?.isUpdateAvailable && !updateDismissed;
+  // Always hide update popup
+  const showUpdatePopup = false;
 
   return (
     <View style={{ flex: 1 }}>
       <Route />
       <UpdatePopup
         visible={showUpdatePopup}
-        onClose={handleCloseUpdate}
+        onClose={() => {}}
       />
     </View>
   );
@@ -120,21 +115,25 @@ function App(): React.JSX.Element {
       NotificationService.setupNotificationListeners();
 
       // Check for dismissed updates
-      store.dispatch(checkDismissedUpdate() as any);
+      store.dispatch(checkDismissedUpdate());
 
       // Check for app updates after a delay
       setTimeout(() => {
-        store.dispatch(checkForUpdates() as any);
+        store.dispatch(checkForUpdates());
       }, 3000);
     };
 
     initializeApp();
   }, []);
 
-  return (
+  const GestureWrappedApp = gestureHandlerRootHOC(AppContent);
+
+ return (
     <Provider store={store}>
       <PersistGate loading={null} persistor={persistor}>
-        <AppContent />
+        <AuthProvider>
+          <GestureWrappedApp />
+        </AuthProvider>
       </PersistGate>
     </Provider>
   );
