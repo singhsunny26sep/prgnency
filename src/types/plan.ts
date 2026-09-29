@@ -34,4 +34,8 @@ export interface Plan {
   includes: string[];
   exclusiveBenefits: string[];
   premiumFeatures?: PremiumFeatures;
+  displayOrder?: number;
+  durationInDays?: number;
+  benefits?: string[];
+  limitations?: string[];
 }

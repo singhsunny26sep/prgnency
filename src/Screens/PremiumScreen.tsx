@@ -21,9 +21,29 @@ type Nav = NativeStackNavigationProp<RootStackParamList, 'Premium'>;
 export type {Plan, PlanOption};
 
 const {width} = Dimensions.get('window');
-const planColors = ['#D6336C', '#8B5CF6', '#F59E0B', '#10B981', '#3B82F6'];
 
-const API_URL = `${'https://api.hiranyagarbhsanskar.co/hiranyagarbha'}/subscriptions/packages`;
+const API_URL = `${'https://api.hiranyagarbhsanskar.co/hiranyagarbha'}/subscriptions/getAll`;
+
+const PAGE_SIZE = 50;
+
+// Colors mirror the API's per-tier theme so a package keeps the same identity
+// wherever it appears. `color` must stay a 6-digit hex: PlanDetailsScreen
+// appends alpha suffixes to it.
+const TIER_COLORS: Record<string, string> = {
+  basic: '#3B82F6',
+  pro: '#8B5CF6',
+  elite: '#F59E0B',
+  bonus: '#10B981',
+};
+
+const FALLBACK_COLORS = ['#D6336C', '#8B5CF6', '#F59E0B', '#10B981', '#3B82F6'];
+
+const colorForTier = (tier: string, index: number): string =>
+  TIER_COLORS[(tier || '').toLowerCase()] ??
+  FALLBACK_COLORS[index % FALLBACK_COLORS.length];
+
+const toStringArray = (value: any): string[] =>
+  Array.isArray(value) ? value.filter(v => v != null).map(String) : [];
 
 // ====== PLAN CARD (Summary only) ======
 const PlanCard = ({
@@ -199,15 +219,48 @@ const PremiumScreen = () => {
 
     const fetchAll = async () => {
       try {
-        const res = await fetch(API_URL);
-        const json = await res.json();
+        // getAll is paginated (12 packages across 2 pages at limit=10), so
+        // every page has to be walked or the tail packages never render.
+        const collected: any[] = [];
+        let page = 1;
+        let totalPages = 1;
 
-        const items: any[] = json?.data?.packages || [];
-        const active = items.filter(
-          (p: any) => p.isActive !== false && p.isDeleted !== true,
+        do {
+          const res = await fetch(
+            `${API_URL}?page=${page}&limit=${PAGE_SIZE}`,
+          );
+          const json = await res.json();
+
+          const body = json?.data;
+          const batch = Array.isArray(body?.data)
+            ? body.data
+            : Array.isArray(body)
+            ? body
+            : Array.isArray(body?.packages)
+            ? body.packages
+            : [];
+
+          collected.push(...batch);
+          totalPages = body?.totalPages || 1;
+          page++;
+        } while (page <= totalPages);
+
+        console.log(
+          `[PREMIUM] fetched ${collected.length} packages over ${totalPages} page(s)`,
         );
 
-        const mapped = active.map((item, index) => ({
+        // Main packages first, then the bonus add-on courses, each by the
+        // admin-defined display order.
+        const sorted = [...collected].sort((a, b) => {
+          const aBonus = (a?.tier || '').toLowerCase() === 'bonus';
+          const bBonus = (b?.tier || '').toLowerCase() === 'bonus';
+          if (aBonus !== bBonus) {
+            return aBonus ? 1 : -1;
+          }
+          return (a?.displayOrder ?? 999) - (b?.displayOrder ?? 999);
+        });
+
+        const mapped = sorted.map((item, index) => ({
           id: item._id,
           name: item.name,
           tier: item.tier || '',
@@ -218,14 +271,18 @@ const PremiumScreen = () => {
           badge: item.badge || '',
           isPopular: !!item.isPopular,
           isFree: !!item.isFree,
-          color: planColors[index % planColors.length],
+          color: colorForTier(item.tier, index),
           price: item.price ?? 0,
           originalPrice: item.originalPrice,
           plans: item.plans || [],
-          modules: item.modules || [],
-          includes: item.includes || [],
-          exclusiveBenefits: item.exclusiveBenefits || [],
+          modules: toStringArray(item.modules),
+          includes: toStringArray(item.includes),
+          exclusiveBenefits: toStringArray(item.exclusiveBenefits),
           premiumFeatures: item.premiumFeatures,
+          displayOrder: item.displayOrder,
+          durationInDays: item.durationInDays,
+          benefits: toStringArray(item.benefits),
+          limitations: toStringArray(item.limitations),
         }));
         setPlans(mapped);
       } catch (err) {
@@ -236,6 +293,13 @@ const PremiumScreen = () => {
     };
     fetchAll();
   }, []);
+
+  const mainPlans = plans.filter(
+    p => (p.tier || '').toLowerCase() !== 'bonus',
+  );
+  const bonusPlans = plans.filter(
+    p => (p.tier || '').toLowerCase() === 'bonus',
+  );
 
   return (
     <View style={styles.container}>
@@ -309,16 +373,40 @@ const PremiumScreen = () => {
             <Text style={styles.emptyText}>No plans available.</Text>
           </View>
         ) : (
-          plans.map((plan, index) => (
-            <PlanCard
-              key={plan.id}
-              plan={plan}
-              index={index}
-              onViewDetails={() =>
-                navigation.navigate('PlanDetails', {plan})
-              }
-            />
-          ))
+          <>
+            {mainPlans.length > 0 && (
+              <Text style={styles.groupLabel}>Subscription Plans</Text>
+            )}
+            {mainPlans.map((plan, index) => (
+              <PlanCard
+                key={plan.id}
+                plan={plan}
+                index={index}
+                onViewDetails={() =>
+                  navigation.navigate('PlanDetails', {plan})
+                }
+              />
+            ))}
+
+            {bonusPlans.length > 0 && (
+              <>
+                <Text style={styles.groupLabel}>Add-on Courses</Text>
+                <Text style={styles.groupHint}>
+                  Optional courses you can add to any plan.
+                </Text>
+                {bonusPlans.map((plan, index) => (
+                  <PlanCard
+                    key={plan.id}
+                    plan={plan}
+                    index={index}
+                    onViewDetails={() =>
+                      navigation.navigate('PlanDetails', {plan})
+                    }
+                  />
+                ))}
+              </>
+            )}
+          </>
         )}
 
         <View style={{height: 30}} />
@@ -373,6 +461,18 @@ const styles = StyleSheet.create({
     width: 50, height: 4, backgroundColor: '#D6336C', borderRadius: 2, marginTop: 8,
   },
   sectionCount: {fontSize: 12, color: '#9CA3AF', marginTop: 8},
+  groupLabel: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#1F2937',
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  groupHint: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    marginBottom: 14,
+  },
 
   planCardWrapper: {marginBottom: 20},
   planCard: {
