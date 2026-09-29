@@ -16,6 +16,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../Context/AuthContext';
 import {
   AppNotification,
+  deleteNotification,
   fetchMyNotifications,
   iconForType,
   markAllNotificationsRead,
@@ -129,28 +130,67 @@ const NotificationScreen = () => {
     }
   };
 
+  const handleDelete = (item: AppNotification) => {
+    Alert.alert(
+      'Delete notification',
+      'Are you sure you want to delete this notification?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => confirmDelete(item),
+        },
+      ],
+    );
+  };
+
+  const confirmDelete = async (item: AppNotification) => {
+    setNotifications(prev => prev.filter(n => n.id !== item.id));
+    try {
+      await deleteNotification(item.id, token);
+    } catch (err: any) {
+      console.error('Failed to delete notification:', err);
+      Alert.alert(
+        'Could not delete',
+        err?.message || 'Please try again.',
+      );
+      load(1, 'refresh');
+    }
+  };
+
   const renderNotification = ({ item }: { item: AppNotification }) => (
-    <TouchableOpacity
-      style={[
-        styles.notificationCard,
-        !item.read && styles.notificationCardUnread,
-      ]}
-      activeOpacity={0.7}
-      onPress={() => handleMarkAsRead(item.id)}>
-      <View style={styles.notificationIconContainer}>
-        <Icon name={iconForType(item.type)} size={moderateScale(24)} color="#D6336C" />
-      </View>
-      <View style={styles.notificationContent}>
-        <View style={styles.notificationHeader}>
-          <Text style={styles.notificationTitle}>{item.title}</Text>
-          <Text style={styles.notificationTime}>{relativeTime(item.createdAt)}</Text>
+    <View style={styles.cardRow}>
+      <TouchableOpacity
+        style={[
+          styles.notificationCard,
+          !item.read && styles.notificationCardUnread,
+        ]}
+        activeOpacity={0.7}
+        onPress={() => handleMarkAsRead(item.id)}>
+        <View style={styles.notificationIconContainer}>
+          <Icon name={iconForType(item.type)} size={moderateScale(24)} color="#D6336C" />
         </View>
-        <Text style={styles.notificationMessage} numberOfLines={2}>
-          {item.message}
-        </Text>
-      </View>
-      {!item.read && <View style={styles.unreadDot} />}
-    </TouchableOpacity>
+        <View style={styles.notificationContent}>
+          <View style={styles.notificationHeader}>
+            <Text style={styles.notificationTitle}>{item.title}</Text>
+            <Text style={styles.notificationTime}>{relativeTime(item.createdAt)}</Text>
+          </View>
+          <Text style={styles.notificationMessage} numberOfLines={2}>
+            {item.message}
+          </Text>
+        </View>
+        {!item.read && <View style={styles.unreadDot} />}
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.deleteButton}
+        onPress={() => handleDelete(item)}
+        activeOpacity={0.7}
+        accessibilityLabel="Delete notification">
+        <Icon name="trash-can-outline" size={moderateScale(18)} color="#D6336C" />
+      </TouchableOpacity>
+    </View>
   );
 
   const renderBody = () => {
@@ -340,12 +380,17 @@ const styles = StyleSheet.create({
   listContent: {
     paddingBottom: verticalScale(24),
   },
+  cardRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: verticalScale(10),
+  },
   notificationCard: {
+    flex: 1,
     flexDirection: 'row',
     backgroundColor: '#FFFFFF',
     borderRadius: moderateScale(16),
     padding: moderateScale(14),
-    marginBottom: verticalScale(10),
     alignItems: 'center',
     elevation: 2,
     shadowColor: '#000',
@@ -393,6 +438,17 @@ const styles = StyleSheet.create({
     fontSize: moderateScale(12),
     color: '#666',
     lineHeight: verticalScale(18),
+  },
+  deleteButton: {
+    width: moderateScale(38),
+    height: moderateScale(38),
+    borderRadius: moderateScale(12),
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: scale(8),
+    backgroundColor: 'rgba(214,51,108,0.08)',
+    borderWidth: 1,
+    borderColor: '#FFD6E0',
   },
   unreadDot: {
     width: moderateScale(10),

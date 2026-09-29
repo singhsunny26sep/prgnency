@@ -576,3 +576,62 @@ export const markAllNotificationsRead = async (
     );
   }
 };
+
+export const deleteNotification = async (
+  notificationId: string,
+  token?: string | null,
+): Promise<boolean> => {
+  if (!notificationId) {
+    return false;
+  }
+
+  const authToken =
+    token || (await AsyncStorage.getItem('@auth_token')) || '';
+
+  if (!authToken) {
+    throw new NotificationApiError(
+      'Please log in to delete notifications.',
+      'EMPTY_TOKEN',
+    );
+  }
+
+  const url = `${NOTIFICATIONS_API}/my/${encodeURIComponent(notificationId)}`;
+
+  try {
+    const response = await fetch(url, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${authToken}`,
+      },
+    });
+    const data = await response.json().catch(() => null);
+
+    console.log(
+      `[NOTIF] ▶ DELETE ${url} → ${response.status}`,
+      JSON.stringify(data),
+    );
+
+    if (!response.ok || data?.success === false) {
+      const isAuthError = response.status === 401 || response.status === 403;
+      throw new NotificationApiError(
+        isAuthError
+          ? 'Your session has expired. Please log in again.'
+          : data?.message || 'Could not delete this notification.',
+        isAuthError ? 'UNAUTHORIZED' : 'API_ERROR',
+        response.status,
+      );
+    }
+
+    return true;
+  } catch (error: any) {
+    if (error instanceof NotificationApiError) {
+      throw error;
+    }
+    console.error('[NOTIF] ✖ delete failed:', error?.message);
+    throw new NotificationApiError(
+      error?.message || 'Network error. Please try again.',
+      'NETWORK_ERROR',
+    );
+  }
+};
