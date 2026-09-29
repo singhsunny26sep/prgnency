@@ -227,14 +227,15 @@ const ProfileScreen = () => {
     { id: '1', title: strings.myProfile || 'मेरा प्रोफ़ाइल', icon: 'account', screen: 'MyProfile' },
     { id: '2', title: strings.premiumMenu || 'प्रीमियम', icon: 'crown', screen: 'Premium' },
     { id: '3', title: 'My Plans', icon: 'package-variant', screen: 'MyOrders' },
-    { id: '4', title: strings.ProductsPlans || 'उत्पाद एवं योजनाएँ', icon: 'shopping', screen: 'ProductsTab' },
-    { id: '5', title: strings.morningDashboard || 'Morning Dashboard', icon: 'chart-line', screen: 'MorningDashboard' },
-    { id: '6', title: strings.changeLanguage || 'भाषा बदलें', icon: 'translate', screen: 'Language' },
-    { id: '7', title: strings.privacyPolicy || 'निजी नीति', icon: 'lock', screen: 'PrivacyPolicy' },
-    { id: '8', title: strings.termsConditions || 'सेवा की शर्तें', icon: 'file-document', screen: 'TermsConditions' },
-    { id: '9', title: strings.helpSupport || 'सहायता', icon: 'help-circle', screen: 'ContactUs' },
-    { id: '10', title: 'Notifications', icon: 'bell', screen: 'Notification' },
-    { id: '11', title: strings.Logout || 'लॉग आउट', icon: 'logout-variant', action: 'logout' },
+    { id: '4', title: 'My Appointments', icon: 'calendar-clock', screen: 'MyAppointments' },
+    { id: '5', title: strings.ProductsPlans || 'उत्पाद एवं योजनाएँ', icon: 'shopping', screen: 'ProductsTab' },
+    { id: '6', title: strings.morningDashboard || 'Morning Dashboard', icon: 'chart-line', screen: 'MorningDashboard' },
+    { id: '7', title: strings.changeLanguage || 'भाषा बदलें', icon: 'translate', screen: 'Language' },
+    { id: '8', title: strings.privacyPolicy || 'निजी नीति', icon: 'lock', screen: 'PrivacyPolicy' },
+    { id: '9', title: strings.termsConditions || 'सेवा की शर्तें', icon: 'file-document', screen: 'TermsConditions' },
+    { id: '10', title: strings.helpSupport || 'सहायता', icon: 'help-circle', screen: 'ContactUs' },
+    { id: '11', title: 'Notifications', icon: 'bell', screen: 'Notification' },
+    { id: '12', title: strings.Logout || 'लॉग आउट', icon: 'logout-variant', action: 'logout' },
   ];
 
   const handlePress = (item: { screen?: string; action?: string }) => {

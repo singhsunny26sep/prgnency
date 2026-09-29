@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect, useRef } from 'react';
+import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -11,7 +11,7 @@ import {
   Platform,
   Animated as RNAnimated,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -31,6 +31,7 @@ import Animated, {
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { scale, moderateScale, verticalScale } from 'react-native-size-matters';
 import { useAuth } from '../Context/AuthContext';
+import { fetchUnreadCount } from '../services/NotificationService';
 
 // --- Types ---
 type RootStackParamList = {
@@ -233,6 +234,23 @@ const HomeScreen = () => {
   const { width } = useWindowDimensions();
   const { user, token } = useAuth();
   const [profile, setProfile] = useState<any>(null);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  // Refetch whenever Home regains focus so marking notifications as read in
+  // NotificationScreen is reflected in the badge on return.
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      fetchUnreadCount(token).then(count => {
+        if (active) {
+          setUnreadCount(count);
+        }
+      });
+      return () => {
+        active = false;
+      };
+    }, [token]),
+  );
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -357,9 +375,13 @@ const HomeScreen = () => {
               activeOpacity={0.7}
             >
               <Icon name="bell-outline" size={moderateScale(20)} color={THEME.textPrimary} />
-              <View style={styles.notificationBadge}>
-                <Text style={styles.notificationBadgeText}>3</Text>
-              </View>
+              {unreadCount > 0 && (
+                <View style={styles.notificationBadge}>
+                  <Text style={styles.notificationBadgeText}>
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </Text>
+                </View>
+              )}
             </TouchableOpacity>
           </View>
 

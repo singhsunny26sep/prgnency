@@ -22,6 +22,7 @@ import PrivacyPolicyScreen from '../Screens/PrivacyPolicyScreen';
 import TermsConditionsScreen from '../Screens/TermsConditionsScreen';
 import CommunityScreen from '../Screens/CommunityScreen';
 import AppointmentScreen from '../Screens/AppointmentScreen';
+import MyAppointmentsScreen from '../Screens/MyAppointmentsScreen';
 import GrowthTrackingScreen from '../Screens/GrowthTrackingScreen';
 import MorningDashboardScreen from '../Screens/MorningDashboardScreen';
 import NotificationScreen from '../Screens/NotificationScreen';
@@ -54,6 +55,7 @@ export type RootStackParamList = {
   Language: undefined;
   Community: undefined;
   Appointment: undefined;
+  MyAppointments: undefined;
   GrowthTracking: undefined;
   MorningDashboard: undefined;
   Notification: undefined;
@@ -106,6 +108,7 @@ const Route = () => {
         <Stack.Screen name="Language" component={LanguageScreen} options={{ headerShown: false }} />
         <Stack.Screen name="Community" component={CommunityScreen} options={{ headerShown: false }} />
         <Stack.Screen name="Appointment" component={AppointmentScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="MyAppointments" component={MyAppointmentsScreen} options={{ headerShown: false }} />
         <Stack.Screen name="GrowthTracking" component={GrowthTrackingScreen} options={{ headerShown: false }} />
         <Stack.Screen name="MorningDashboard" component={MorningDashboardScreen} options={{ headerShown: false }} />
         <Stack.Screen name="Notification" component={NotificationScreen} options={{ headerShown: false }} />

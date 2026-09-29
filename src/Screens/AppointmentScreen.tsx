@@ -14,18 +14,17 @@ import LinearGradient from 'react-native-linear-gradient';
 import strings from '../../localization';
 import {useAuth} from '../Context/AuthContext';
 import {fetchUserProfile} from '../services/ProfileService';
+import {
+  buildDayOptions,
+  fetchDoctorSlots,
+  toDateParam as formatDateParam,
+  TimeSlot,
+} from '../services/AppointmentService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 const API_URL = 'https://api.hiranyagarbhsanskar.co/hiranyagarbha';
 const BOOKING_API = `${API_URL}/appointments/book`;
 const DOCTORS_API = `${API_URL}/doctors/get-all`;
-const SLOTS_API = `${API_URL}/appointments/slots`;
 const WHATSAPP_NUMBER = '+917972833428';
-
-interface TimeSlot {
-  id: string;
-  time: string;
-  available: boolean;
-}
 
 interface Doctor {
   _id: string;
@@ -77,16 +76,6 @@ const getInitials = (name: string): string =>
     .map(part => part[0]?.toUpperCase() || '')
     .join('') || 'DR';
 
-const parseTimeToDate = (timeStr: string, date: Date): Date => {
-  const [time, period] = timeStr.split(' ');
-  let [hours, minutes] = time.split(':').map(Number);
-  if (period === 'PM' && hours !== 12) hours += 12;
-  if (period === 'AM' && hours === 12) hours = 0;
-  const result = new Date(date);
-  result.setHours(hours, minutes, 0, 0);
-  return result;
-};
-
 const AppointmentScreen = () => {
   const {user, token} = useAuth();
   const [doctors, setDoctors] = useState<Doctor[]>([]);
@@ -106,6 +95,8 @@ const AppointmentScreen = () => {
   const [slotsError, setSlotsError] = useState<string | null>(null);
   const [slotsRetry, setSlotsRetry] = useState(0);
   const [search, setSearch] = useState('');
+  const [selectedDate, setSelectedDate] = useState(() => formatDateParam(new Date()));
+  const dayOptions = useMemo(() => buildDayOptions(14), []);
 
   const filteredDoctors = useMemo(
     () =>
@@ -136,38 +127,19 @@ const AppointmentScreen = () => {
       setSelectedTimeSlotId(null);
 
       try {
-        const today = new Date();
-        const appointmentDate = new Date(today);
-        appointmentDate.setHours(0, 0, 0, 0);
-        const dateStr = appointmentDate.toISOString().split('T')[0];
-
-        const url = `${SLOTS_API}?doctorId=${selectedDoctorId}&appointmentDate=${dateStr}`;
-        const headers: Record<string, string> = {
-          'Content-Type': 'application/json',
-        };
-        if (token) {
-          headers['Authorization'] = `Bearer ${token}`;
-        }
-        const response = await fetch(url, {
-          method: 'GET',
-          headers,
-        });
-        const data = await response.json();
-
-        if (response.ok && data.success && Array.isArray(data.data)) {
-          const formattedSlots: TimeSlot[] = data.data.map((item: any) => ({
-            id: item._id || item.id || String(Math.random()),
-            time: item.time || item.slotTime || '',
-            available: item.available !== false,
-          }));
-          setTimeSlots(formattedSlots);
-        } else {
-          setSlotsError(data.message || 'Failed to fetch time slots');
-          setTimeSlots([]);
-        }
-      } catch (err) {
-        console.error('Failed to fetch time slots:', err);
-        setSlotsError('Network error. Please try again.');
+        const {slots} = await fetchDoctorSlots(
+          selectedDoctorId,
+          selectedDate,
+          token,
+        );
+        setTimeSlots(slots);
+      } catch (err: any) {
+        console.error('[SLOTS] ✖ FAILED:', err);
+        setSlotsError(
+          err?.code === 'UNAUTHORIZED'
+            ? 'Your session has expired. Please log in again.'
+            : err?.message || 'Failed to fetch time slots',
+        );
         setTimeSlots([]);
       } finally {
         setSlotsLoading(false);
@@ -175,7 +147,7 @@ const AppointmentScreen = () => {
     };
 
     fetchSlots();
-  }, [selectedDoctorId, slotsRetry]);
+  }, [selectedDoctorId, selectedDate, slotsRetry, token]);
 
   useEffect(() => {
     const fetchDoctors = async () => {
@@ -298,19 +270,16 @@ const AppointmentScreen = () => {
       return;
     }
     const effectiveUserId = user?.id || user?._id || profileUserId;
-    const today = new Date();
-    const appointmentDate = new Date(today);
-    appointmentDate.setHours(0, 0, 0, 0);
-    const startDateTime = parseTimeToDate(selectedTimeSlot!.time, today);
-    const endDateTime = new Date(startDateTime.getTime() + 30 * 60000);
+    const [y, m, d] = selectedDate.split('-').map(Number);
+    const slot = selectedTimeSlot!;
     const payload = {
       patientId: effectiveUserId,
       doctorId: selectedDoctor!._id,
       scheduledBy: 'PATIENT',
-      appointmentDate: appointmentDate.toISOString(),
-      startTime: startDateTime.toISOString(),
-      endTime: endDateTime.toISOString(),
-      duration: 30,
+      appointmentDate: new Date(Date.UTC(y, m - 1, d)).toISOString(),
+      startTime: slot.startTime,
+      endTime: slot.endTime,
+      duration: slot.duration,
       appointmentType: 'CLINIC',
       symptoms: symptoms.trim() || 'General consultation',
       notes: notes.trim() || '',
@@ -356,7 +325,7 @@ console.log(authToken,"this is toke ");
       if (response.ok && data.success) {
         Alert.alert(
           'Appointment Booked',
-          `Your appointment with ${selectedDoctor?.fullName} at ${selectedTimeSlot?.time} has been confirmed.`,
+          `Your appointment with ${selectedDoctor?.fullName} on ${selectedDate} at ${selectedTimeSlot?.label} has been confirmed.`,
           [
             {
               text: 'OK',
@@ -408,7 +377,7 @@ console.log(authToken,"this is toke ");
     }
 
     const phoneNumber = WHATSAPP_NUMBER.replace(/\s+/g, '');
-    const message = `Hello, I would like to book an appointment with ${selectedDoctor?.fullName} at ${selectedTimeSlot?.time}. Please confirm.`;
+    const message = `Hello, I would like to book an appointment with ${selectedDoctor?.fullName} on ${selectedDate} at ${selectedTimeSlot?.label}. Please confirm.`;
     const encodedMessage = encodeURIComponent(message);
     const whatsappUrl = `https://wa.me/${phoneNumber.substring(
       1,
@@ -628,6 +597,40 @@ console.log(authToken,"this is toke ");
         </View>
 
         <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Select Date</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.dayStrip}>
+            {dayOptions.map(day => {
+              const isActive = day.label === selectedDate;
+              return (
+                <TouchableOpacity
+                  key={day.label}
+                  style={[styles.dayChip, isActive && styles.dayChipActive]}
+                  onPress={() => setSelectedDate(day.label)}
+                  activeOpacity={0.85}>
+                  <Text
+                    style={[
+                      styles.dayChipDay,
+                      isActive && styles.dayChipDayActive,
+                    ]}>
+                    {day.isToday ? 'Today' : day.dayName}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.dayChipDate,
+                      isActive && styles.dayChipDateActive,
+                    ]}>
+                    {day.dayNumber}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
+
+        <View style={styles.section}>
           <Text style={styles.sectionTitle}>
             {strings.availableTimeSlots || 'Available Time Slots'}
           </Text>
@@ -651,7 +654,7 @@ console.log(authToken,"this is toke ");
             </Text>
           ) : timeSlots.length === 0 ? (
             <Text style={styles.emptyText}>
-              No slots available for the selected doctor today.
+              No slots available on {selectedDate}.
             </Text>
           ) : (
             <View style={styles.timeSlotsContainer}>
@@ -676,7 +679,7 @@ console.log(authToken,"this is toke ");
                       selectedTimeSlotId === slot.id &&
                         styles.timeSlotTextSelected,
                     ]}>
-                    {slot.time}
+                    {slot.label}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -714,7 +717,8 @@ console.log(authToken,"this is toke ");
           {isBookingEnabled && (
             <View style={styles.selectedSummary}>
               <Text style={styles.summaryText}>
-                📋 {selectedDoctor?.fullName} at {selectedTimeSlot?.time}
+                📋 {selectedDoctor?.fullName} on {selectedDate} at{' '}
+                {selectedTimeSlot?.label}
               </Text>
             </View>
           )}
@@ -1056,6 +1060,41 @@ const styles = StyleSheet.create({
   languagesRow: {
     flexDirection: 'row',
     marginTop: 4,
+  },
+  dayStrip: {
+    flexDirection: 'row',
+    paddingVertical: 2,
+  },
+  dayChip: {
+    width: 62,
+    paddingVertical: 10,
+    borderRadius: 14,
+    alignItems: 'center',
+    marginRight: 10,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 2,
+    borderColor: '#F3D4DC',
+  },
+  dayChipActive: {
+    borderColor: '#D6336C',
+    backgroundColor: '#FFF0F3',
+  },
+  dayChipDay: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#888',
+  },
+  dayChipDayActive: {
+    color: '#D6336C',
+  },
+  dayChipDate: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#333',
+    marginTop: 2,
+  },
+  dayChipDateActive: {
+    color: '#D6336C',
   },
   timeSlotsContainer: {
     flexDirection: 'row',

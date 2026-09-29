@@ -1,102 +1,135 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  ScrollView,
+  ActivityIndicator,
   FlatList,
+  RefreshControl,
+  Alert,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { scale, moderateScale, verticalScale } from 'react-native-size-matters';
 import { useNavigation } from '@react-navigation/native';
+import { useAuth } from '../Context/AuthContext';
+import {
+  AppNotification,
+  fetchMyNotifications,
+  iconForType,
+  markAllNotificationsRead,
+  markNotificationRead,
+  relativeTime,
+} from '../services/NotificationService';
 
-interface NotificationItem {
-  id: string;
-  title: string;
-  message: string;
-  time: string;
-  read: boolean;
-  icon: string;
-}
-
-const notificationsData: NotificationItem[] = [
-  {
-    id: '1',
-    title: 'New Expert Session',
-    message: 'Dr. Sharma is hosting a live session on prenatal yoga tomorrow at 7 AM.',
-    time: '2 hours ago',
-    read: false,
-    icon: 'video',
-  },
-  {
-    id: '2',
-    title: 'Appointment Confirmed',
-    message: 'Your appointment with Dr. Patel is confirmed for Oct 20 at 10:30 AM.',
-    time: '5 hours ago',
-    read: false,
-    icon: 'calendar-check',
-  },
-  {
-    id: '3',
-    title: 'Weekly Tips Available',
-    message: 'New weekly tips for week 25 are now available. Check them out!',
-    time: '1 day ago',
-    read: false,
-    icon: 'lightbulb',
-  },
-  {
-    id: '4',
-    title: 'Community Update',
-    message: 'Priya M. shared a new post in your community group.',
-    time: '2 days ago',
-    read: true,
-    icon: 'account-group',
-  },
-  {
-    id: '5',
-    title: 'Product Recommendation',
-    message: 'Check out our new collection of prenatal vitamins and supplements.',
-    time: '3 days ago',
-    read: true,
-    icon: 'shopping',
-  },
-  {
-    id: '6',
-    title: 'Growth Milestone',
-    message: 'Your baby is now the size of a cauliflower! Track development updates.',
-    time: '5 days ago',
-    read: true,
-    icon: 'chart-line',
-  },
-  {
-    id: '7',
-    title: 'Reminder',
-    message: 'Time for your daily meditation session. Stay consistent!',
-    time: '1 week ago',
-    read: true,
-    icon: 'meditation',
-  },
-];
+const PAGE_SIZE = 20;
 
 const NotificationScreen = () => {
   const navigation = useNavigation();
-  const [notifications, setNotifications] = useState<NotificationItem[]>(notificationsData);
+  const { token } = useAuth();
+
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [sessionExpired, setSessionExpired] = useState(false);
+
+  const load = useCallback(
+    async (targetPage: number, mode: 'initial' | 'refresh' | 'more') => {
+      if (mode === 'more') {
+        setLoadingMore(true);
+      } else {
+        setLoading(true);
+      }
+      setError(null);
+
+      try {
+        const result = await fetchMyNotifications(token, targetPage, PAGE_SIZE);
+        setNotifications(prev =>
+          mode === 'more' ? [...prev, ...result.items] : result.items,
+        );
+        setPage(result.page);
+        setTotal(result.total);
+        setHasMore(result.hasMore);
+      } catch (err: any) {
+        console.error('Failed to fetch notifications:', err);
+        setSessionExpired(err?.code === 'UNAUTHORIZED');
+        setError(err?.message || 'Could not load your notifications.');
+        if (mode === 'initial') {
+          setNotifications([]);
+        }
+      } finally {
+        setLoading(false);
+        setLoadingMore(false);
+        setRefreshing(false);
+      }
+    },
+    [token],
+  );
+
+  useEffect(() => {
+    load(1, 'initial');
+  }, [load]);
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    load(1, 'refresh');
+  };
+
+  const handleEndReached = () => {
+    if (!hasMore || loadingMore || loading) {
+      return;
+    }
+    load(page + 1, 'more');
+  };
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
-  const handleMarkAsRead = (id: string) => {
+  const handleMarkAsRead = async (id: string) => {
+    const target = notifications.find(n => n.id === id);
+    if (!target || target.read) {
+      return;
+    }
     setNotifications(prev =>
       prev.map(n => (n.id === id ? { ...n, read: true } : n)),
     );
+    try {
+      await markNotificationRead(id, token);
+    } catch (err: any) {
+      console.error('Failed to mark notification as read:', err);
+      setNotifications(prev =>
+        prev.map(n => (n.id === id ? { ...n, read: false } : n)),
+      );
+      Alert.alert(
+        'Could not update',
+        err?.message || 'Please try again.',
+      );
+    }
   };
 
-  const handleMarkAllAsRead = () => {
+  const handleMarkAllAsRead = async () => {
+    if (unreadCount === 0) {
+      return;
+    }
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    try {
+      await markAllNotificationsRead(token);
+    } catch (err: any) {
+      console.error('Failed to mark all as read:', err);
+      Alert.alert(
+        'Could not update',
+        err?.message || 'Please try again.',
+      );
+      load(1, 'refresh');
+    }
   };
 
-  const renderNotification = ({ item }: { item: NotificationItem }) => (
+  const renderNotification = ({ item }: { item: AppNotification }) => (
     <TouchableOpacity
       style={[
         styles.notificationCard,
@@ -105,12 +138,12 @@ const NotificationScreen = () => {
       activeOpacity={0.7}
       onPress={() => handleMarkAsRead(item.id)}>
       <View style={styles.notificationIconContainer}>
-        <Icon name={item.icon} size={moderateScale(24)} color="#D6336C" />
+        <Icon name={iconForType(item.type)} size={moderateScale(24)} color="#D6336C" />
       </View>
       <View style={styles.notificationContent}>
         <View style={styles.notificationHeader}>
           <Text style={styles.notificationTitle}>{item.title}</Text>
-          <Text style={styles.notificationTime}>{item.time}</Text>
+          <Text style={styles.notificationTime}>{relativeTime(item.createdAt)}</Text>
         </View>
         <Text style={styles.notificationMessage} numberOfLines={2}>
           {item.message}
@@ -119,6 +152,66 @@ const NotificationScreen = () => {
       {!item.read && <View style={styles.unreadDot} />}
     </TouchableOpacity>
   );
+
+  const renderBody = () => {
+    if (loading) {
+      return (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#D6336C" />
+          <Text style={styles.loadingText}>Loading notifications…</Text>
+        </View>
+      );
+    }
+
+    if (error) {
+      return (
+        <View style={styles.emptyContainer}>
+          <Icon name="wifi-off" size={moderateScale(60)} color="#CCC" />
+          <Text style={styles.emptyText}>
+            {sessionExpired ? 'Session expired' : 'Could not load notifications'}
+          </Text>
+          <Text style={styles.emptySubtext}>{error}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={() => load(1, 'initial')}>
+            <Text style={styles.retryText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
+    if (notifications.length === 0) {
+      return (
+        <View style={styles.emptyContainer}>
+          <Icon name="bell-off" size={moderateScale(60)} color="#CCC" />
+          <Text style={styles.emptyText}>No notifications yet</Text>
+          <Text style={styles.emptySubtext}>Stay tuned for updates</Text>
+        </View>
+      );
+    }
+
+    return (
+      <FlatList
+        data={notifications}
+        renderItem={renderNotification}
+        keyExtractor={(item, index) => item.id || `notif-${index}`}
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={['#D6336C']} />
+        }
+        onEndReached={handleEndReached}
+        onEndReachedThreshold={0.4}
+        ListFooterComponent={
+          loadingMore ? (
+            <ActivityIndicator style={styles.footerLoader} color="#D6336C" />
+          ) : !hasMore ? (
+            <Text style={styles.endText}>
+              {total > 0 ? `Showing all ${total} notifications` : ''}
+            </Text>
+          ) : null
+        }
+      />
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -143,23 +236,7 @@ const NotificationScreen = () => {
         )}
       </LinearGradient>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {notifications.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Icon name="bell-off" size={moderateScale(60)} color="#CCC" />
-            <Text style={styles.emptyText}>No notifications yet</Text>
-            <Text style={styles.emptySubtext}>Stay tuned for updates</Text>
-          </View>
-        ) : (
-          <FlatList
-            data={notifications}
-            renderItem={renderNotification}
-            keyExtractor={item => item.id}
-            scrollEnabled={false}
-            contentContainerStyle={styles.listContent}
-          />
-        )}
-      </ScrollView>
+      <View style={styles.content}>{renderBody()}</View>
     </View>
   );
 };
@@ -210,6 +287,27 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: scale(16),
     paddingTop: verticalScale(16),
+  },
+  retryButton: {
+    marginTop: verticalScale(18),
+    backgroundColor: '#D6336C',
+    paddingHorizontal: scale(26),
+    paddingVertical: verticalScale(10),
+    borderRadius: moderateScale(20),
+  },
+  retryText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: moderateScale(14),
+  },
+  footerLoader: {
+    marginVertical: verticalScale(16),
+  },
+  endText: {
+    textAlign: 'center',
+    color: '#9CA3AF',
+    fontSize: moderateScale(12),
+    marginTop: verticalScale(8),
   },
   loadingContainer: {
     flex: 1,
