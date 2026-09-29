@@ -6,6 +6,7 @@ import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../Navigation/Route';
 import strings from '../../localization';
 import { useAuth } from '../Context/AuthContext';
+import NotificationService from '../services/NotificationService';
 
 const API_URL = 'https://api.hiranyagarbhsanskar.co/hiranyagarbha';
 
@@ -56,6 +57,7 @@ const OTPScreen = () => {
     }
     setLoading(true);
     try {
+      const fcmToken = await NotificationService.getFCMToken();
       const response = await fetch(`${API_URL}/auth/verify-otp-mobile`, {
         method: 'PUT',
         headers: {
@@ -66,7 +68,7 @@ const OTPScreen = () => {
           otp: otpString,
           sessionId: sessionId,
           role: 'user',
-          fcmToken: 'dummy-fcm-token',
+          fcmToken,
           loginType: 'mobile',
           currentScreen: 'LANDING',
         }),
@@ -79,12 +81,26 @@ const OTPScreen = () => {
       console.log('Response success:', data.success);
       console.log('Response message:', data.message);
       console.log('User data:', data.data?.user);
+      console.log('Profile data:', data.data?.profile);
       console.log('Token field:', data.data?.token);
       console.log('JWT field:', data.data?.jwt);
       console.log('SessionId field:', data.data?.sessionId);
       console.log('=====================================');
       if (response.ok && data.success) {
         const userId = data.data?.user?.id || data.data?.user?._id;
+        // The patients profile object is the source of truth when present.
+        // Older responses only carry the user-level isSignUpCompleted flag.
+        const isProfileCompleted = data.data?.profile
+          ? data.data.profile.isProfileCompleted === true
+          : (data.data?.user?.isProfileCompleted ??
+             data.data?.user?.isSignUpCompleted) === true;
+        console.log(
+          'Profile completed flag:',
+          isProfileCompleted,
+          '(source:',
+          data.data?.profile ? 'profile.isProfileCompleted' : 'user',
+          ')',
+        );
         const userData = {
           id: userId,
           _id: userId,
@@ -92,6 +108,8 @@ const OTPScreen = () => {
           name: data.data?.user?.name,
           email: data.data?.user?.email,
           sessionId: data.data?.sessionId || sessionId,
+          isSignUpCompleted: isProfileCompleted,
+          isProfileCompleted,
         };
         
         const allTokenFields = {
@@ -104,11 +122,14 @@ const OTPScreen = () => {
         console.log('All available token fields:', allTokenFields);
         
         let authToken = '';
-        
-        if (data.data?.token && (data.data?.token.startsWith('eyJ') || data.data?.token.includes('.'))) {
+
+        const isJwt = (v?: string | null) =>
+          !!v && (v.startsWith('eyJ') || v.split('.').length === 3);
+
+        if (isJwt(data.data?.token)) {
           authToken = data.data.token.trim();
           console.log('Using JWT token from data.data.token');
-        } else if (data.data?.jwt && (data.data?.jwt.startsWith('eyJ') || data.data?.jwt.includes('.'))) {
+        } else if (isJwt(data.data?.jwt)) {
           authToken = data.data.jwt.trim();
           console.log('Using JWT token from data.data.jwt');
         } else if (data.data?.sessionId) {
@@ -130,7 +151,12 @@ const OTPScreen = () => {
         console.log('User ID selected:', userId);
         
         await login(userData, authToken);
-        navigation.navigate('MainTabs');
+        navigation.reset({
+          index: 0,
+          routes: [
+            {name: isProfileCompleted ? 'MainTabs' : 'CompleteProfile'},
+          ],
+        });
       } else {
         Alert.alert(
           strings.alertError || 'त्रुटि',

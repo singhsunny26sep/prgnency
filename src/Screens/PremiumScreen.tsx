@@ -1,455 +1,458 @@
-import React from 'react';
+import React, {useState, useEffect, useRef} from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
   ScrollView,
+  ActivityIndicator,
+  Animated,
+  Dimensions,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import {useNavigation} from '@react-navigation/native';
+import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import LinearGradient from 'react-native-linear-gradient';
-import { RootStackParamList } from '../Navigation/Route';
+import {RootStackParamList} from '../Navigation/Route';
+import {Plan, PlanOption} from '../types/plan';
 import strings from '../../localization';
 
-type PremiumScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Premium'>;
+type Nav = NativeStackNavigationProp<RootStackParamList, 'Premium'>;
 
-interface Plan {
-  id: string;
-  name: string;
-  price: string;
-  period: string;
-  color: string;
-  popular?: boolean;
-  modules: string[];
-  exclusive?: string[];
-}
+export type {Plan, PlanOption};
 
-const plans: Plan[] = [
-  {
-    id: 'basic',
-    name: strings.basicPackage || 'BASIC PACKAGE',
-    price: '1,999',
-    period: '/' + (strings.threeMonths || '3 Months'),
-    color: '#8B5CF6',
-    modules: [
-      strings.introductionToHiranyagarbha || 'Introduction to Hiranyagarbha',
-      strings.pregnancyMonthwiseBabyDevelopment || 'Pregnancy Month-wise Baby Development',
-      strings.healthyPregnancyLifestyle || 'Healthy Pregnancy Lifestyle',
-      strings.nutritionDietBasics || 'Nutrition & Diet Basics',
-      strings.pregnancyYogaBeginner || 'Pregnancy Yoga (Beginner)',
-      strings.breathingRelaxation || 'Breathing & Relaxation',
-      strings.meditationForMotherBaby || 'Meditation for Mother & Baby',
-      strings.garbhaSamvad || 'Garbha Samvad (Talking to Baby)',
-      strings.positiveAffirmations || 'Positive Affirmations',
-      strings.musicTherapy || 'Music Therapy',
-      strings.emotionalWellness || 'Emotional Wellness',
-      strings.husbandsRoleInPregnancy || "Husband's Role in Pregnancy",
-    ],
-    includes: [
-      strings.twelveRecordedVideoModules || '12 Recorded Video Modules',
-      strings.weeklyLiveSession || 'Weekly Live Session',
-      strings.dietCharts || 'Diet Charts',
-      strings.dailyAffirmations || 'Daily Affirmations',
-      strings.mobileAppAccess || 'Mobile App Access',
-      strings.whatsappSupport || 'WhatsApp Support',
-      strings.pregnancyJournalDigital || 'Pregnancy Journal (Digital)',
-    ],
-  },
-  {
-    id: 'pro',
-    name: strings.proPackage || 'PRO PACKAGE',
-    price: '3,999',
-    period: '/' + (strings.entirePregnancy || 'Entire Pregnancy'),
-    color: '#EC4899',
-    popular: true,
-    modules: [
-      strings.trimesterwiseMasterclasses || 'Trimester-wise Masterclasses',
-      strings.advancedPregnancyYoga || 'Advanced Pregnancy Yoga',
-      strings.ayurvedicPregnancyCare || 'Ayurvedic Pregnancy Care',
-      strings.stressAnxietyManagement || 'Stress & Anxiety Management',
-      strings.coupleBondingSessions || 'Couple Bonding Sessions',
-      strings.fetalBrainDevelopment || 'Fetal Brain Development Activities',
-      strings.sanskritMantras || 'Sanskrit Mantras & Meaning',
-      strings.mindfulnessVisualization || 'Mindfulness & Visualization',
-      strings.garbhaMeditationSeries || 'Garbha Meditation Series',
-      strings.labourPreparation || 'Labour Preparation',
-      strings.breastfeedingPreparation || 'Breastfeeding Preparation',
-      strings.newbornCareBasics || 'Newborn Care Basics',
-      strings.parentingPsychology || 'Parenting Psychology',
-      strings.familyCounselling || 'Family Counselling',
-      strings.nutritionMasterclass || 'Nutrition Masterclass',
-    ],
-    exclusive: [
-      strings.weeklyLiveQnA || 'Weekly Live Q&A',
-      strings.monthlyDoctorConsultation || 'Monthly Doctor Consultation',
-      strings.dieticianConsultation || 'Dietician Consultation',
-      strings.personalizedPregnancyTracker || 'Personalized Pregnancy Tracker',
-      strings.monthlyBabyGrowthReport || 'Monthly Baby Growth Report',
-      strings.exclusiveCommunity || 'Exclusive Community',
-    ],
-  },
-  {
-    id: 'elite',
-    name: strings.elitePackage || 'ELITE PACKAGE',
-    price: '7,999',
-    period: '/' + (strings.entirePregnancy || 'Entire Pregnancy'),
-    color: '#F59E0B',
-    modules: [
-      strings.personalizedObstetricConsultation || 'Personalized Obstetric Consultation',
-      strings.nutritionReview || 'Nutrition Review',
-      strings.physiotherapyGuidance || 'Physiotherapy Guidance',
-      strings.mentalWellnessCounselling || 'Mental Wellness Counselling',
-      strings.highRiskPregnancyGuidance || 'High-Risk Pregnancy Guidance',
-    ],
-    includes: [
-      strings.chakraHealingMeditation || 'Chakra Healing Meditation',
-      strings.soundHealing || 'Sound Healing',
-      strings.advancedYoga || 'Advanced Yoga',
-      strings.coupleMeditation || 'Couple Meditation',
-      strings.parentingCoaching || 'Parenting Coaching',
-    ],
-    exclusive: [
-      strings.birthPlanCreation || 'Birth Plan Creation',
-      strings.normalDeliveryPreparation || 'Normal Delivery Preparation',
-      strings.labourBreathingWorkshop || 'Labour Breathing Workshop',
-      strings.hospitalBagChecklist || 'Hospital Bag Checklist',
-      strings.emergencyPreparedness || 'Emergency Preparedness',
-    ],
-    premium: [
-      strings.breastfeedingCoaching || 'Breastfeeding Coaching',
-      strings.postpartumRecovery || 'Postpartum Recovery',
-      strings.babyMassageGuidance || 'Baby Massage Guidance',
-      strings.infantDevelopment || 'Infant Development (0-6 Months)',
-      strings.parentingMasterclass || 'Parenting Masterclass',
-      strings.mothersMentalHealth || "Mother's Mental Health",
-    ],
-  },
-];
+const {width} = Dimensions.get('window');
+const planColors = ['#D6336C', '#8B5CF6', '#F59E0B', '#10B981', '#3B82F6'];
 
-const PremiumScreen = () => {
-  const navigation = useNavigation<PremiumScreenNavigationProp>();
+const API_URL = `${'https://api.hiranyagarbhsanskar.co/hiranyagarbha'}/subscriptions/packages`;
 
-  const renderPlan = (plan: Plan) => (
-    <View
-      key={plan.id}
+// ====== PLAN CARD (Summary only) ======
+const PlanCard = ({
+  plan,
+  index,
+  onViewDetails,
+}: {
+  plan: Plan;
+  index: number;
+  onViewDetails: () => void;
+}) => {
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(30)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 500,
+        delay: index * 120,
+        useNativeDriver: true,
+      }),
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        delay: index * 120,
+        friction: 8,
+        tension: 60,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
+
+  const discountPercent =
+    plan.originalPrice && plan.originalPrice > plan.price
+      ? Math.round(
+          ((plan.originalPrice - plan.price) / plan.originalPrice) * 100,
+        )
+      : 0;
+
+  return (
+    <Animated.View
       style={[
-        styles.planCard,
-        plan.popular && styles.planCardPopular,
+        styles.planCardWrapper,
+        {opacity: fadeAnim, transform: [{translateY: slideAnim}]},
       ]}
     >
-      {plan.popular && (
-        <View style={styles.popularBadgeContainer}>
-          <Text style={styles.popularBadgeText}>
-            {strings.mostPopular || 'Most Popular'}
-          </Text>
-        </View>
-      )}
-      <LinearGradient
-        colors={[plan.color, plan.color + 'CC']}
-        style={styles.planHeader}
-      >
-        <Text style={styles.planName}>{plan.name}</Text>
-        <View style={styles.priceRow}>
-          <Text style={styles.currency}>₹</Text>
-          <Text style={styles.price}>{plan.price}</Text>
-          <Text style={styles.period}>{plan.period}</Text>
-        </View>
-      </LinearGradient>
+      <TouchableOpacity activeOpacity={0.95} onPress={onViewDetails}>
+        <View style={styles.planCard}>
+          {/* Ribbon */}
+          {(plan.badge || plan.isPopular) && (
+            <View style={styles.popularRibbon}>
+              <LinearGradient
+                colors={['#EC4899', '#D6336C']}
+                start={{x: 0, y: 0}}
+                end={{x: 1, y: 0}}
+                style={styles.popularRibbonGradient}
+              >
+                <Text style={styles.popularRibbonText}>
+                  ⭐ {plan.badge || 'MOST POPULAR'}
+                </Text>
+              </LinearGradient>
+            </View>
+          )}
 
-      <View style={styles.planContent}>
-        {(plan.modules || []).map((module, index) => (
-          <View key={index} style={styles.moduleItem}>
-            <Text style={styles.checkMark}>✓</Text>
-            <Text style={styles.moduleText}>{module}</Text>
-          </View>
-        ))}
-
-        {(plan.includes || []).map((item, index) => (
-          <View key={`inc-${index}`} style={styles.moduleItem}>
-            <Text style={styles.checkMark}>✓</Text>
-            <Text style={styles.moduleText}>{item}</Text>
-          </View>
-        ))}
-
-        {(plan.exclusive || []).map((item, index) => (
-          <View key={`exc-${index}`} style={styles.exclusiveItem}>
-            <Text style={styles.exclusiveMark}>★</Text>
-            <Text style={styles.exclusiveText}>{item}</Text>
-          </View>
-        ))}
-
-        {(plan.premium || []).map((item, index) => (
-          <View key={`prem-${index}`} style={styles.premiumItem}>
-            <Text style={styles.premiumMark}>★</Text>
-            <Text style={styles.premiumText}>{item}</Text>
-          </View>
-        ))}
-
-        <TouchableOpacity style={styles.subscribeButton}>
+          {/* Header */}
           <LinearGradient
-            colors={[plan.color, plan.color + 'DD']}
-            style={styles.buttonGradient}
+            colors={[plan.color, plan.color + 'CC']}
+            start={{x: 0, y: 0}}
+            end={{x: 1, y: 1}}
+            style={styles.planHeader}
           >
-            <Text style={styles.subscribeButtonText}>
-              {strings.subscribeNow || 'Subscribe Now'}
-            </Text>
+            <View style={styles.decorCircle1} />
+            {!!plan.tier && (
+              <View style={styles.tierChip}>
+                <Text style={styles.tierChipText}>
+                  {plan.tier.toUpperCase()}
+                </Text>
+              </View>
+            )}
+            <Text style={styles.planName}>{plan.name}</Text>
+            {!!plan.subtitle && (
+              <Text style={styles.planSubtitle}>{plan.subtitle}</Text>
+            )}
+
+            <View style={styles.priceRow}>
+              <Text style={styles.currency}>₹</Text>
+              <Text style={styles.price}>
+                {plan.isFree ? 'FREE' : plan.price}
+              </Text>
+              {!!plan.duration && (
+                <Text style={styles.period}>/{plan.duration}</Text>
+              )}
+            </View>
+
+            {!!plan.originalPrice && plan.originalPrice > plan.price && (
+              <View style={styles.originalPriceRow}>
+                <Text style={styles.originalPrice}>
+                  ₹{plan.originalPrice}
+                </Text>
+                {discountPercent > 0 && (
+                  <View style={styles.discountBadge}>
+                    <Text style={styles.discountText}>
+                      {discountPercent}% OFF
+                    </Text>
+                  </View>
+                )}
+              </View>
+            )}
           </LinearGradient>
-        </TouchableOpacity>
-      </View>
-    </View>
+
+          {/* Quick Summary */}
+          <View style={styles.planContent}>
+            {!!plan.description && (
+              <Text style={styles.description} numberOfLines={2}>
+                {plan.description}
+              </Text>
+            )}
+
+            {/* Quick stats */}
+            <View style={styles.statsRow}>
+              <View style={styles.statItem}>
+                <Text style={styles.statNumber}>{plan.modules.length}</Text>
+                <Text style={styles.statLabel}>Modules</Text>
+              </View>
+              <View style={styles.statDivider} />
+              <View style={styles.statItem}>
+                <Text style={styles.statNumber}>{plan.includes.length}</Text>
+                <Text style={styles.statLabel}>Includes</Text>
+              </View>
+              <View style={styles.statDivider} />
+              <View style={styles.statItem}>
+                <Text style={styles.statNumber}>{plan.plans.length}</Text>
+                <Text style={styles.statLabel}>Options</Text>
+              </View>
+            </View>
+
+            {/* View Details button */}
+            <TouchableOpacity
+              onPress={onViewDetails}
+              activeOpacity={0.9}
+              style={styles.viewDetailsButton}
+            >
+              <LinearGradient
+                colors={[plan.color, plan.color + 'CC']}
+                start={{x: 0, y: 0}}
+                end={{x: 1, y: 0}}
+                style={styles.buttonGradient}
+              >
+                <Text style={styles.viewDetailsText}>View Details</Text>
+                <Text style={styles.buttonArrow}>→</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </TouchableOpacity>
+    </Animated.View>
   );
+};
+
+// ====== MAIN LIST SCREEN ======
+const PremiumScreen = () => {
+  const navigation = useNavigation<Nav>();
+  const [plans, setPlans] = useState<Plan[]>([]);
+  const [loading, setLoading] = useState(true);
+  const headerAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(headerAnim, {
+      toValue: 1,
+      duration: 600,
+      useNativeDriver: true,
+    }).start();
+
+    const fetchAll = async () => {
+      try {
+        const res = await fetch(API_URL);
+        const json = await res.json();
+
+        const items: any[] = json?.data?.packages || [];
+        const active = items.filter(
+          (p: any) => p.isActive !== false && p.isDeleted !== true,
+        );
+
+        const mapped = active.map((item, index) => ({
+          id: item._id,
+          name: item.name,
+          tier: item.tier || '',
+          subtitle: item.subtitle || '',
+          description: item.description || '',
+          duration: item.duration || '',
+          idealFor: item.idealFor || '',
+          badge: item.badge || '',
+          isPopular: !!item.isPopular,
+          isFree: !!item.isFree,
+          color: planColors[index % planColors.length],
+          price: item.price ?? 0,
+          originalPrice: item.originalPrice,
+          plans: item.plans || [],
+          modules: item.modules || [],
+          includes: item.includes || [],
+          exclusiveBenefits: item.exclusiveBenefits || [],
+          premiumFeatures: item.premiumFeatures,
+        }));
+        setPlans(mapped);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAll();
+  }, []);
 
   return (
     <View style={styles.container}>
-      <LinearGradient
-        colors={['#D6336C', '#F06292', '#F8B4C2']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.header}
+      <View style={styles.bgBlob1} />
+      <View style={styles.bgBlob2} />
+
+      {/* Header */}
+      <Animated.View
+        style={[
+          styles.headerWrapper,
+          {
+            opacity: headerAnim,
+            transform: [
+              {
+                translateY: headerAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [-30, 0],
+                }),
+              },
+            ],
+          },
+        ]}
       >
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Text style={styles.backIcon}>←</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>{strings.premium || 'Premium'}</Text>
-      </LinearGradient>
+        <LinearGradient
+          colors={['#D6336C', '#EC4899', '#F8B4C2']}
+          start={{x: 0, y: 0}}
+          end={{x: 1, y: 1}}
+          style={styles.header}
+        >
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}
+          >
+            <Text style={styles.backIcon}>←</Text>
+          </TouchableOpacity>
+          <View style={styles.headerTitleWrapper}>
+            <Text style={styles.headerTitle}>
+              {strings.premium || 'Premium'}
+            </Text>
+            <Text style={styles.headerSubtitle}>Choose your plan</Text>
+          </View>
+          <View style={styles.crownBadge}>
+            <Text style={styles.crownEmoji}>👑</Text>
+          </View>
+        </LinearGradient>
+      </Animated.View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.heroSection}>
-          <Text style={styles.heroTitle}>
-            {strings.unlockPower || 'Unlock the Power of'} {' '}
-            <Text style={styles.heroHighlight}>HiranyaGarbha</Text>
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.sectionTitleWrapper}>
+          <Text style={styles.sectionTitle}>
+            {strings.choosePlan || 'Choose Your Plan'}
           </Text>
-          <Text style={styles.heroSubtitle}>
-            {strings.heroSubtitle || 'Give your unborn child the best start in life with our comprehensive Garbh Sanskar program'}
+          <View style={styles.sectionTitleUnderline} />
+          <Text style={styles.sectionCount}>
+            {plans.length} packages available
           </Text>
         </View>
 
-        <Text style={styles.sectionTitle}>{strings.choosePlan || 'Choose Your Plan'}</Text>
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#D6336C" />
+            <Text style={styles.loadingText}>Loading plans...</Text>
+          </View>
+        ) : plans.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyEmoji}>📭</Text>
+            <Text style={styles.emptyText}>No plans available.</Text>
+          </View>
+        ) : (
+          plans.map((plan, index) => (
+            <PlanCard
+              key={plan.id}
+              plan={plan}
+              index={index}
+              onViewDetails={() =>
+                navigation.navigate('PlanDetails', {plan})
+              }
+            />
+          ))
+        )}
 
-        {plans.map((plan) => renderPlan(plan))}
-
-        <View style={styles.guaranteeSection}>
-          <Text style={styles.guaranteeText}>
-            {strings.guaranteeText || '7-Day Money Back Guarantee • Cancel Anytime • Secure Payment'}
-          </Text>
-        </View>
+        <View style={{height: 30}} />
       </ScrollView>
     </View>
   );
 };
 
+export default PremiumScreen;
+
+// ============ STYLES ============
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#FFF5F7',
+  container: {flex: 1, backgroundColor: '#FFF5F7'},
+  bgBlob1: {
+    position: 'absolute', top: -80, right: -80, width: 220, height: 220,
+    borderRadius: 110, backgroundColor: '#F8B4C2', opacity: 0.25,
   },
+  bgBlob2: {
+    position: 'absolute', top: 200, left: -100, width: 180, height: 180,
+    borderRadius: 90, backgroundColor: '#D6336C', opacity: 0.08,
+  },
+
+  headerWrapper: {zIndex: 10},
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingTop: 50,
-    paddingBottom: 16,
-    paddingHorizontal: 16,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
+    flexDirection: 'row', alignItems: 'center', paddingTop: 50,
+    paddingBottom: 24, paddingHorizontal: 16, borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32, overflow: 'hidden', elevation: 8,
+    shadowColor: '#D6336C', shadowOffset: {width: 0, height: 4},
+    shadowOpacity: 0.3, shadowRadius: 12,
   },
   backButton: {
-    padding: 8,
+    padding: 8, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.2)',
+    width: 42, height: 42, justifyContent: 'center', alignItems: 'center',
   },
-  backIcon: {
-    fontSize: 24,
-    color: '#FFFFFF',
+  backIcon: {fontSize: 22, color: '#FFFFFF', fontWeight: '600'},
+  headerTitleWrapper: {flex: 1, marginLeft: 14},
+  headerTitle: {fontSize: 22, fontWeight: '700', color: '#FFFFFF'},
+  headerSubtitle: {fontSize: 12, color: '#FFFFFF', opacity: 0.85, marginTop: 2},
+  crownBadge: {
+    width: 42, height: 42, borderRadius: 21,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    justifyContent: 'center', alignItems: 'center',
   },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    marginLeft: 16,
+  crownEmoji: {fontSize: 22},
+
+  content: {flex: 1},
+  scrollContent: {paddingHorizontal: 16, paddingTop: 20},
+
+  sectionTitleWrapper: {alignItems: 'center', marginBottom: 20},
+  sectionTitle: {fontSize: 22, fontWeight: '800', color: '#1F2937'},
+  sectionTitleUnderline: {
+    width: 50, height: 4, backgroundColor: '#D6336C', borderRadius: 2, marginTop: 8,
   },
-  content: {
-    flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 20,
-  },
-  heroSection: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 24,
-    marginBottom: 20,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-  },
-  heroTitle: {
-    fontSize: 22,
-    color: '#333',
-    fontWeight: '500',
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  heroHighlight: {
-    color: '#D6336C',
-    fontWeight: 'bold',
-  },
-  heroSubtitle: {
-    fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#333',
-    marginBottom: 16,
-    textAlign: 'center',
-  },
+  sectionCount: {fontSize: 12, color: '#9CA3AF', marginTop: 8},
+
+  planCardWrapper: {marginBottom: 20},
   planCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    marginBottom: 20,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    overflow: 'hidden',
+    backgroundColor: '#FFFFFF', borderRadius: 24, overflow: 'hidden', elevation: 6,
+    shadowColor: '#000', shadowOffset: {width: 0, height: 6},
+    shadowOpacity: 0.12, shadowRadius: 16,
   },
-  planCardPopular: {
-    borderWidth: 2,
-    borderColor: '#EC4899',
+  popularRibbon: {
+    position: 'absolute', top: 0, right: 0, zIndex: 10,
+    borderBottomLeftRadius: 16, overflow: 'hidden',
   },
-  popularBadgeContainer: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    backgroundColor: '#EC4899',
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderBottomLeftRadius: 16,
-    zIndex: 1,
+  popularRibbonGradient: {paddingHorizontal: 16, paddingVertical: 8},
+  popularRibbonText: {color: '#FFFFFF', fontSize: 11, fontWeight: '800'},
+
+  planHeader: {padding: 24, alignItems: 'center', overflow: 'hidden'},
+  decorCircle1: {
+    position: 'absolute', top: -40, right: -40, width: 140, height: 140,
+    borderRadius: 70, backgroundColor: '#FFFFFF', opacity: 0.12,
   },
-  popularBadgeText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '600',
+  tierChip: {
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    paddingHorizontal: 12, paddingVertical: 4,
+    borderRadius: 12, marginBottom: 8,
   },
-  planHeader: {
-    padding: 24,
-    alignItems: 'center',
-  },
+  tierChipText: {color: '#FFFFFF', fontSize: 10, fontWeight: '800', letterSpacing: 1.5},
   planName: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginBottom: 12,
+    fontSize: 22, fontWeight: '800', color: '#FFFFFF', textAlign: 'center',
   },
-  priceRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
+  planSubtitle: {
+    fontSize: 12, color: '#FFFFFF', opacity: 0.9,
+    fontStyle: 'italic', marginTop: 4,
   },
+  priceRow: {flexDirection: 'row', alignItems: 'flex-end', marginTop: 12},
   currency: {
-    fontSize: 20,
-    color: '#FFFFFF',
-    opacity: 0.8,
-    marginRight: 4,
+    fontSize: 20, color: '#FFFFFF', opacity: 0.9,
+    marginRight: 2, fontWeight: '600', marginBottom: 6,
   },
-  price: {
-    fontSize: 36,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-  },
+  price: {fontSize: 40, fontWeight: '900', color: '#FFFFFF'},
   period: {
-    fontSize: 14,
-    color: '#FFFFFF',
-    opacity: 0.8,
-    marginLeft: 4,
-    marginBottom: 4,
+    fontSize: 13, color: '#FFFFFF', opacity: 0.85,
+    marginLeft: 6, marginBottom: 8,
   },
-  planContent: {
-    padding: 20,
+  originalPriceRow: {flexDirection: 'row', alignItems: 'center', marginTop: 4},
+  originalPrice: {
+    fontSize: 13, color: '#FFFFFF', opacity: 0.7,
+    textDecorationLine: 'line-through', marginRight: 8,
   },
-  moduleItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 10,
+  discountBadge: {
+    backgroundColor: '#10B981', paddingHorizontal: 8, paddingVertical: 2,
+    borderRadius: 8,
   },
-  checkMark: {
-    color: '#10B981',
-    fontSize: 16,
-    marginRight: 8,
-    fontWeight: 'bold',
+  discountText: {color: '#FFFFFF', fontSize: 10, fontWeight: '800'},
+
+  planContent: {padding: 20},
+  description: {
+    fontSize: 13, color: '#4B5563', lineHeight: 19, marginBottom: 14,
+    fontStyle: 'italic',
   },
-  moduleText: {
-    flex: 1,
-    fontSize: 14,
-    color: '#444',
-    lineHeight: 20,
+  statsRow: {
+    flexDirection: 'row', backgroundColor: '#FFF5F7',
+    borderRadius: 14, paddingVertical: 12, marginBottom: 14,
   },
-  exclusiveItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 10,
-  },
-  exclusiveMark: {
-    color: '#8B5CF6',
-    fontSize: 16,
-    marginRight: 8,
-    fontWeight: 'bold',
-  },
-  exclusiveText: {
-    flex: 1,
-    fontSize: 14,
-    color: '#444',
-    lineHeight: 20,
-  },
-  premiumItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 10,
-  },
-  premiumMark: {
-    color: '#F59E0B',
-    fontSize: 16,
-    marginRight: 8,
-    fontWeight: 'bold',
-  },
-  premiumText: {
-    flex: 1,
-    fontSize: 14,
-    color: '#444',
-    lineHeight: 20,
-  },
-  subscribeButton: {
-    marginTop: 10,
-    borderRadius: 12,
-    overflow: 'hidden',
+  statItem: {flex: 1, alignItems: 'center'},
+  statNumber: {fontSize: 18, fontWeight: '800', color: '#D6336C'},
+  statLabel: {fontSize: 11, color: '#6B7280', marginTop: 2},
+  statDivider: {width: 1, backgroundColor: '#F3D4DC'},
+
+  viewDetailsButton: {
+    borderRadius: 14, overflow: 'hidden',
   },
   buttonGradient: {
-    paddingVertical: 14,
-    alignItems: 'center',
+    paddingVertical: 14, flexDirection: 'row',
+    alignItems: 'center', justifyContent: 'center',
   },
-  subscribeButtonText: {
-    fontSize: 16,
-    color: '#FFFFFF',
-    fontWeight: '600',
-  },
-  guaranteeSection: {
-    backgroundColor: '#E8F5E9',
-    marginHorizontal: 20,
-    marginBottom: 30,
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  guaranteeText: {
-    fontSize: 13,
-    color: '#2E7D32',
-    textAlign: 'center',
-  },
-});
+  viewDetailsText: {fontSize: 15, color: '#FFFFFF', fontWeight: '800'},
+  buttonArrow: {fontSize: 16, color: '#FFFFFF', fontWeight: '800', marginLeft: 8},
 
-export default PremiumScreen;
+  loadingContainer: {padding: 60, alignItems: 'center'},
+  loadingText: {marginTop: 14, fontSize: 14, color: '#6B7280'},
+  emptyContainer: {padding: 60, alignItems: 'center'},
+  emptyEmoji: {fontSize: 48, marginBottom: 12},
+  emptyText: {fontSize: 14, color: '#6B7280'},
+});

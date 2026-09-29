@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useMemo} from 'react';
 import {
   View,
   Text,
@@ -13,8 +13,8 @@ import {
 import LinearGradient from 'react-native-linear-gradient';
 import strings from '../../localization';
 import {useAuth} from '../Context/AuthContext';
+import {fetchUserProfile} from '../services/ProfileService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
 const API_URL = 'https://api.hiranyagarbhsanskar.co/hiranyagarbha';
 const BOOKING_API = `${API_URL}/appointments/book`;
 const DOCTORS_API = `${API_URL}/doctors/get-all`;
@@ -59,6 +59,24 @@ interface Doctor {
   updatedAt?: string;
 }
 
+const AVATAR_GRADIENTS: [string, string][] = [
+  ['#D6336C', '#F06292'],
+  ['#8B5CF6', '#C084FC'],
+  ['#0EA5E9', '#38BDF8'],
+  ['#10B981', '#34D399'],
+  ['#F59E0B', '#FBBF24'],
+  ['#EC4899', '#F9A8D4'],
+];
+
+const getInitials = (name: string): string =>
+  name
+    .replace(/^Dr\.?\s*/i, '')
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(part => part[0]?.toUpperCase() || '')
+    .join('') || 'DR';
+
 const parseTimeToDate = (timeStr: string, date: Date): Date => {
   const [time, period] = timeStr.split(' ');
   let [hours, minutes] = time.split(':').map(Number);
@@ -75,6 +93,7 @@ const AppointmentScreen = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [booking, setBooking] = useState(false);
+  const [profile, setProfile] = useState<any>(null);
   const [profileUserId, setProfileUserId] = useState<string | null>(null);
   const [selectedDoctorId, setSelectedDoctorId] = useState<string | null>(null);
   const [selectedTimeSlotId, setSelectedTimeSlotId] = useState<string | null>(
@@ -86,6 +105,23 @@ const AppointmentScreen = () => {
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [slotsError, setSlotsError] = useState<string | null>(null);
   const [slotsRetry, setSlotsRetry] = useState(0);
+  const [search, setSearch] = useState('');
+
+  const filteredDoctors = useMemo(
+    () =>
+      doctors.filter(d => {
+        const q = search.trim().toLowerCase();
+        if (!q) return true;
+        return (
+          d.fullName.toLowerCase().includes(q) ||
+          d.specialization.toLowerCase().includes(q) ||
+          (d.department || '').toLowerCase().includes(q) ||
+          d.expertise.some(e => e.toLowerCase().includes(q)) ||
+          d.languages.some(l => l.toLowerCase().includes(q))
+        );
+      }),
+    [doctors, search],
+  );
 
   useEffect(() => {
     const fetchSlots = async () => {
@@ -151,62 +187,67 @@ const AppointmentScreen = () => {
           headers['Authorization'] = `Bearer ${token}`;
         }
 
-        console.log('Fetching doctors with token:', token);
-        console.log('Request headers:', headers);
+        let page = 1;
+        let totalPages = 1;
+        const allItems: any[] = [];
 
-        const response = await fetch(DOCTORS_API, {
-          method: 'GET',
-          headers,
-        });
+        do {
+          const res = await fetch(`${DOCTORS_API}?page=${page}&limit=10`, {
+            method: 'GET',
+            headers,
+          });
+          const json = await res.json();
+          if (res.ok && json.success && Array.isArray(json.data?.data)) {
+            allItems.push(...json.data.data);
+            totalPages = json.data.totalPages || 1;
+          } else {
+            console.log('Doctors API error:', json?.message);
+            if (page === 1) {
+              setError(json?.message || 'Failed to fetch doctors');
+            }
+            break;
+          }
+          page++;
+        } while (page <= totalPages);
 
-        const data = await response.json();
-        console.log('Doctors API response:', data);
+        const formattedDoctors: Doctor[] = allItems.map((item: any) => ({
+          _id: item._id,
+          userId: item.userId,
+          fullName: item.fullName?.trim() || 'Doctor',
+          email: item.email,
+          phone: item.phone,
+          expertise: Array.isArray(item.expertise) ? item.expertise : [],
+          languages: Array.isArray(item.languages) ? item.languages : [],
+          rating: typeof item.rating === 'number' ? item.rating : 0,
+          reviewsCount:
+            typeof item.reviewsCount === 'number' ? item.reviewsCount : 0,
+          patientsCount:
+            typeof item.patientsCount === 'number' ? item.patientsCount : 0,
+          status: item.status || 'Inactive',
+          isProfileCompleted: !!item.isProfileCompleted,
+          isActive: !!item.isActive,
+          isDeleted: !!item.isDeleted,
+          address: item.address,
+          availableDays: item.availableDays,
+          availableTime: item.availableTime,
+          bloodGroup: item.bloodGroup,
+          consultationFee:
+            item.consultationFee !== undefined && item.consultationFee !== null
+              ? String(item.consultationFee)
+              : undefined,
+          dateOfBirth: item.dateOfBirth,
+          department: item.department || item.specialization || 'General',
+          experience: item.experience || 'Not specified',
+          gender: item.gender,
+          licenseNumber: item.licenseNumber,
+          qualifications: item.qualifications,
+          specialization: item.specialization || 'General',
+          availabilityId: item.availabilityId,
+          createdAt: item.createdAt,
+          updatedAt: item.updatedAt,
+        }));
 
-        if (
-          response.ok &&
-          data.success &&
-          data.data &&
-          Array.isArray(data.data.data)
-        ) {
-          const formattedDoctors: Doctor[] = data.data.data.map(
-            (item: any) => ({
-              _id: item._id,
-              userId: item.userId,
-              fullName: item.fullName || 'Unknown Doctor',
-              email: item.email,
-              phone: item.phone,
-              expertise: Array.isArray(item.expertise) ? item.expertise : [],
-              languages: Array.isArray(item.languages) ? item.languages : [],
-              rating: typeof item.rating === 'number' ? item.rating : 0,
-              reviewsCount:
-                typeof item.reviewsCount === 'number' ? item.reviewsCount : 0,
-              patientsCount:
-                typeof item.patientsCount === 'number' ? item.patientsCount : 0,
-              status: item.status || 'Inactive',
-              isProfileCompleted: !!item.isProfileCompleted,
-              isActive: !!item.isActive,
-              isDeleted: !!item.isDeleted,
-              address: item.address,
-              availableDays: item.availableDays,
-              availableTime: item.availableTime,
-              bloodGroup: item.bloodGroup,
-              consultationFee: item.consultationFee,
-              dateOfBirth: item.dateOfBirth,
-              department: item.department || item.specialization || 'General',
-              experience: item.experience || 'Not specified',
-              gender: item.gender,
-              licenseNumber: item.licenseNumber,
-              qualifications: item.qualifications,
-              specialization: item.specialization || 'General',
-              availabilityId: item.availabilityId,
-              createdAt: item.createdAt,
-              updatedAt: item.updatedAt,
-            }),
-          );
-          setDoctors(formattedDoctors);
-        } else {
-          setError(data.message || 'Failed to fetch doctors');
-        }
+        setDoctors(formattedDoctors);
       } catch (err) {
         console.error('Failed to fetch doctors:', err);
         setError('Network error. Please try again.');
@@ -219,15 +260,20 @@ const AppointmentScreen = () => {
   }, [token]);
 
   useEffect(() => {
+    const loginUserId = user?.id || user?._id;
+    if (loginUserId && !profileUserId) {
+      setProfileUserId(loginUserId);
+    }
+  }, [user?.id, user?._id, profileUserId]);
+
+  useEffect(() => {
     const fetchProfile = async () => {
       if (!token) return;
       try {
-        const response = await fetch(`${API_URL}/users/get`, {
-          headers: {Authorization: `Bearer ${token}`},
-        });
-        const data = await response.json();
-        if (response.ok && data.success && data.data) {
-          const profileId = data.data._id || data.data.id;
+        const profile = await fetchUserProfile(token);
+        if (profile) {
+          setProfile(profile);
+          const profileId = profile.id || profile._id || user?.id || user?._id;
           if (profileId) {
             setProfileUserId(profileId);
           }
@@ -238,7 +284,7 @@ const AppointmentScreen = () => {
     };
 
     fetchProfile();
-  }, [token]);
+  }, [token, user?.id]);
 
   const selectedDoctor = doctors.find(d => d._id === selectedDoctorId);
   const selectedTimeSlot = timeSlots.find(s => s.id === selectedTimeSlotId);
@@ -389,12 +435,37 @@ console.log(authToken,"this is toke ");
         start={{x: 0, y: 0}}
         end={{x: 1, y: 1}}
         style={styles.header}>
+        <View style={styles.blobOne} />
+        <View style={styles.blobTwo} />
+        <Text style={styles.headerGreeting}>
+          {profile?.name || user?.name || 'Hello'}
+        </Text>
         <Text style={styles.headerTitle}>
           {strings.bookAppointment || 'Book Appointment'}
         </Text>
         <Text style={styles.headerSubtitle}>
           {strings.appointmentSubtitle || 'Consult with pregnancy experts'}
         </Text>
+        <View style={styles.headerStatBar}>
+          <View style={styles.headerStatItem}>
+            <Text style={styles.headerStatValue}>{doctors.length}</Text>
+            <Text style={styles.headerStatLabel}>Doctors</Text>
+          </View>
+          <View style={styles.headerStatDivider} />
+          <View style={styles.headerStatItem}>
+            <Text style={styles.headerStatValue}>
+              {doctors.filter(d => d.rating > 0).length}
+            </Text>
+            <Text style={styles.headerStatLabel}>Reviewed</Text>
+          </View>
+          <View style={styles.headerStatDivider} />
+          <View style={styles.headerStatItem}>
+            <Text style={styles.headerStatValue}>
+              {doctors.filter(d => d.isProfileCompleted).length}
+            </Text>
+            <Text style={styles.headerStatLabel}>Available</Text>
+          </View>
+        </View>
       </LinearGradient>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -402,6 +473,24 @@ console.log(authToken,"this is toke ");
           <Text style={styles.sectionTitle}>
             {strings.availableDoctors || 'Available Doctors'}
           </Text>
+
+          {!loading && !error && filteredDoctors.length > 0 && (
+            <View style={styles.searchWrapper}>
+              <Text style={styles.searchIcon}>🔍</Text>
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search by name, specialty or language"
+                placeholderTextColor="#9CA3AF"
+                value={search}
+                onChangeText={setSearch}
+              />
+              {search.length > 0 && (
+                <TouchableOpacity onPress={() => setSearch('')}>
+                  <Text style={styles.searchClear}>✕</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
 
           {loading ? (
             <View style={styles.loadingContainer}>
@@ -417,14 +506,14 @@ console.log(authToken,"this is toke ");
                 <Text style={styles.retryButtonText}>Retry</Text>
               </TouchableOpacity>
             </View>
-          ) : doctors.length === 0 ? (
+          ) : filteredDoctors.length === 0 ? (
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyText}>
-                No doctors available at the moment.
+                No doctors match your search.
               </Text>
             </View>
           ) : (
-            doctors.map(doctor => (
+            filteredDoctors.map(doctor => (
               <React.Fragment key={doctor._id}>
                 <TouchableOpacity
                   style={[
@@ -433,25 +522,51 @@ console.log(authToken,"this is toke ");
                       styles.doctorCardSelected,
                   ]}
                   onPress={() => handleSelectDoctor(doctor._id)}
-                  activeOpacity={0.7}>
-                  <View style={styles.doctorAvatar}>
-                    <Text style={styles.doctorAvatarText}>👩‍⚕️</Text>
-                  </View>
+                  activeOpacity={0.85}>
+                  <LinearGradient
+                    colors={AVATAR_GRADIENTS[
+                      doctor._id.charCodeAt(doctor._id.length - 1) %
+                        AVATAR_GRADIENTS.length
+                    ]}
+                    start={{x: 0, y: 0}}
+                    end={{x: 1, y: 1}}
+                    style={styles.doctorAvatar}>
+                    <Text style={styles.doctorAvatarText}>
+                      {getInitials(doctor.fullName)}
+                    </Text>
+                  </LinearGradient>
                   <View style={styles.doctorInfo}>
-                    <Text style={styles.doctorName}>{doctor.fullName}</Text>
-                    <Text style={styles.doctorSpecialty}>
+                    <View style={styles.doctorNameRow}>
+                      <Text style={styles.doctorName} numberOfLines={1}>
+                        {doctor.fullName}
+                      </Text>
+                      {doctor.gender === 'Female' && (
+                        <Text style={styles.genderIcon}>♀</Text>
+                      )}
+                    </View>
+                    <Text style={styles.doctorSpecialty} numberOfLines={1}>
                       {doctor.specialization}
                     </Text>
-                    <Text style={styles.doctorExperience}>
-                      {strings.experience || 'Experience'}: {doctor.experience}
-                    </Text>
-                    <Text style={styles.doctorDepartment}>
-                      {doctor.department}
-                    </Text>
-                  </View>
-                  <View style={styles.ratingBadge}>
-                    <Text style={styles.ratingText}>
-                      ⭐ {doctor.rating > 0 ? doctor.rating.toFixed(1) : 'New'}
+                    <View style={styles.doctorMetaRow}>
+                      <View style={styles.metaChip}>
+                        <Text style={styles.metaChipText}>
+                          ⭐{' '}
+                          {doctor.rating > 0
+                            ? `${doctor.rating.toFixed(1)} (${doctor.reviewsCount})`
+                            : 'New'}
+                        </Text>
+                      </View>
+                      {doctor.consultationFee &&
+                        Number(doctor.consultationFee) > 0 && (
+                          <View style={styles.feeChip}>
+                            <Text style={styles.feeChipText}>
+                              ₹{doctor.consultationFee}
+                            </Text>
+                          </View>
+                        )}
+                    </View>
+                    <Text style={styles.doctorDepartment} numberOfLines={1}>
+                      {doctor.department} · {doctor.experience}
                     </Text>
                   </View>
                   {selectedDoctorId === doctor._id && (
@@ -652,12 +767,80 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderBottomLeftRadius: 30,
     borderBottomRightRadius: 30,
+    overflow: 'hidden',
+  },
+  blobOne: {
+    position: 'absolute',
+    top: -50,
+    right: -40,
+    width: 160,
+    height: 160,
+    borderRadius: 80,
+    backgroundColor: '#FFFFFF',
+    opacity: 0.12,
+  },
+  blobTwo: {
+    position: 'absolute',
+    bottom: -60,
+    left: -50,
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: '#FFFFFF',
+    opacity: 0.08,
+  },
+  headerStatBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 16,
+    paddingVertical: 12,
+    marginTop: 18,
+  },
+  headerStatItem: {flex: 1, alignItems: 'center'},
+  headerStatValue: {fontSize: 18, fontWeight: '800', color: '#FFFFFF'},
+  headerStatLabel: {
+    fontSize: 11,
+    color: '#FFFFFF',
+    opacity: 0.85,
+    marginTop: 2,
+  },
+  headerStatDivider: {width: 1, height: 28, backgroundColor: 'rgba(255,255,255,0.3)'},
+  searchWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    marginBottom: 16,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#F3D4DC',
+  },
+  searchIcon: {fontSize: 15, marginRight: 8},
+  searchInput: {
+    flex: 1,
+    paddingVertical: 12,
+    fontSize: 14,
+    color: '#333',
+  },
+  searchClear: {
+    fontSize: 15,
+    color: '#9CA3AF',
+    paddingHorizontal: 4,
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
     color: '#FFFFFF',
     textAlign: 'center',
+  },
+  headerGreeting: {
+    fontSize: 16,
+    color: '#FFF5F7',
+    textAlign: 'center',
+    marginTop: 8,
+    opacity: 0.9,
   },
   headerSubtitle: {
     fontSize: 14,
@@ -739,17 +922,46 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFF0F3',
   },
   doctorAvatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#FFE4E9',
+    width: 62,
+    height: 62,
+    borderRadius: 31,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
+    marginRight: 14,
   },
   doctorAvatarText: {
-    fontSize: 32,
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: 0.5,
   },
+  doctorNameRow: {flexDirection: 'row', alignItems: 'center'},
+  genderIcon: {
+    fontSize: 13,
+    color: '#EC4899',
+    marginLeft: 6,
+    fontWeight: '700',
+  },
+  doctorMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 5,
+    gap: 6,
+  },
+  metaChip: {
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  metaChipText: {fontSize: 11, color: '#92400E', fontWeight: '700'},
+  feeChip: {
+    backgroundColor: '#D1FAE5',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  feeChipText: {fontSize: 11, color: '#047857', fontWeight: '700'},
   doctorInfo: {
     flex: 1,
   },

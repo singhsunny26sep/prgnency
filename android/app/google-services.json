@@ -1,27 +1,27 @@
 {
   "project_info": {
-    "project_number": "124221626786",
-    "project_id": "dreamchild-d6639",
-    "storage_bucket": "dreamchild-d6639.firebasestorage.app"
+    "project_number": "801305616599",
+    "project_id": "hirnagrabha",
+    "storage_bucket": "hirnagrabha.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:124221626786:android:57a4865ef550eba0193afb",
+        "mobilesdk_app_id": "1:801305616599:android:af193b23968d8d3410d092",
         "android_client_info": {
-           "package_name": "com.hiranyagarbhsanskar"
+          "package_name": "com.hiranyagarbhsanskar"
         }
       },
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyA7H6S989wlIfOo80iFZEqi3cl50PjsS6Y"
+          "current_key": "AIzaSyBGSSKZtfNk0cLuv_aRZmSe0YYsjkx35w4"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": []
-        } 
+        }
       }
     }
   ],

@@ -12,7 +12,7 @@ import {
 import strings from '../../localization';
 
 const API_URL =
-  'https://hiranyagarbha.onrender.com/hiranyagarbha/contact-us/create';
+  'https://api.hiranyagarbhsanskar.co/hiranyagarbha/contact-us/create';
 
 const ContactUsScreen = () => {
   const [name, setName] = useState('');

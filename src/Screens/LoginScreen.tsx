@@ -5,6 +5,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../Navigation/Route';
 import strings from '../../localization';
 import { useAuth } from '../Context/AuthContext';
+import NotificationService from '../services/NotificationService';
 
 type LoginScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Login'>;
 
@@ -22,6 +23,9 @@ const LoginScreen = () => {
     }
     setLoading(true);
     try {
+      const fcmToken = await NotificationService.getFCMToken();
+      console.log('FCM Token:', fcmToken);
+
       const response = await fetch(`${API_URL}/auth/loginOrSignin-with-mobile`, {
         method: 'POST',
         headers: {
@@ -30,6 +34,7 @@ const LoginScreen = () => {
         body: JSON.stringify({
           mobile: parseInt(mobile, 10),
           isPermissionGiven: true,
+          fcmToken,
         }),
       });
       const data = await response.json();

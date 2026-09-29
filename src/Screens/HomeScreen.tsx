@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   FlatList,
   useWindowDimensions,
   Platform,
+  Animated as RNAnimated,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -18,9 +19,18 @@ import Animated, {
   useAnimatedStyle,
   withSpring,
   useSharedValue,
+  runOnJS,
+  FadeInDown,
+  FadeInUp,
+  ZoomIn,
+  withRepeat,
+  withTiming,
+  withSequence,
+  Easing,
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { scale, moderateScale, verticalScale } from 'react-native-size-matters';
+import { useAuth } from '../Context/AuthContext';
 
 // --- Types ---
 type RootStackParamList = {
@@ -37,112 +47,67 @@ type RootStackParamList = {
   Appointment: undefined;
   GrowthTracking: undefined;
   ContactUs: undefined;
+  Notification: undefined;
 };
 type HomeScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Home'>;
 
 interface FeatureItem {
   id: string;
   title: string;
-  icon: string; // MaterialCommunityIcons name
+  icon: string;
   screen: keyof RootStackParamList;
-  gradientColors: string[];
-  subtitle?: string;
+  gradient: string[];
+  subtitle: string;
 }
 
-// --- Feature Data ---
+// --- MODERN AURORA COLOR SYSTEM ---
+const THEME = {
+  // Backgrounds
+  bg: '#0A0A0F',              // Deep space black
+  bgElevated: '#14141C',      // Elevated surface
+  bgGlass: 'rgba(255,255,255,0.04)',
+  bgGlassStrong: 'rgba(255,255,255,0.08)',
+
+  // Borders
+  border: 'rgba(255,255,255,0.08)',
+  borderStrong: 'rgba(255,255,255,0.15)',
+
+  // Text
+  textPrimary: '#FFFFFF',
+  textSecondary: 'rgba(255,255,255,0.65)',
+  textTertiary: 'rgba(255,255,255,0.4)',
+
+  // Accents
+  rose: '#FF4D8D',
+  roseGlow: 'rgba(255,77,141,0.35)',
+  violet: '#A78BFA',
+  violetGlow: 'rgba(167,139,250,0.35)',
+  cyan: '#22D3EE',
+  cyanGlow: 'rgba(34,211,238,0.35)',
+  amber: '#FBBF24',
+  amberGlow: 'rgba(251,191,36,0.35)',
+  mint: '#34D399',
+  mintGlow: 'rgba(52,211,153,0.35)',
+};
+
+// --- Feature Data with Aurora Gradients ---
 const pregnancyFeatures: FeatureItem[] = [
-  {
-    id: '1',
-    title: 'Garbh Sanskar',
-    icon: 'meditation',
-    screen: 'GarbhSanskar',
-    gradientColors: ['#667eea', '#764ba2'],
-    subtitle: 'Daily videos & activities',
-  },
-  {
-    id: '2',
-    title: 'Weekly Tips',
-    icon: 'note-text',
-    screen: 'WeeklyTips',
-    gradientColors: ['#f093fb', '#f5576c'],
-    subtitle: 'Week-by-week guidance',
-  },
-  {
-    id: '3',
-    title: 'Symptoms Tracker',
-    icon: 'stethoscope',
-    screen: 'Symptoms',
-    gradientColors: ['#4facfe', '#00f2fe'],
-    subtitle: 'Track your health',
-  },
-  {
-    id: '4',
-    title: 'Baby Names',
-    icon: 'baby',
-    screen: 'BabyNames',
-    gradientColors: ['#43e97b', '#38f9d7'],
-    subtitle: 'Find the perfect name',
-  },
-  {
-    id: '5',
-    title: 'Nutrition Guide',
-    icon: 'food-apple',
-    screen: 'Nutrition',
-    gradientColors: ['#fa709a', '#fee140'],
-    subtitle: 'Healthy eating tips',
-  },
-  {
-    id: '6',
-    title: 'Exercise',
-    icon: 'run',
-    screen: 'Exercise',
-    gradientColors: ['#a8edea', '#fed6e3'],
-    subtitle: 'Safe workouts',
-  },
-  {
-    id: '7',
-    title: 'Products',
-    icon: 'shopping',
-    screen: 'Products',
-    gradientColors: ['#ff9a9e', '#fecfef'],
-    subtitle: 'Essential products',
-  },
-  {
-    id: '8',
-    title: 'Premium',
-    icon: 'crown',
-    screen: 'Premium',
-    gradientColors: ['#f6d365', '#fda085'],
-    subtitle: 'Unlock all features',
-  },
-  {
-    id: '9',
-    title: 'Community',
-    icon: 'account-group',
-    screen: 'Community',
-    gradientColors: ['#89f7fe', '#66a6ff'],
-    subtitle: 'Connect with moms',
-  },
-  {
-    id: '10',
-    title: 'Appointment',
-    icon: 'calendar',
-    screen: 'Appointment',
-    gradientColors: ['#a18cd1', '#fbc2eb'],
-    subtitle: 'Consult experts',
-  },
-  {
-    id: '11',
-    title: 'Growth',
-    icon: 'chart-line',
-    screen: 'GrowthTracking',
-    gradientColors: ['#ffecd2', '#fcb69f'],
-    subtitle: 'Track development',
-  },
+  { id: '1', title: 'Garbh Sanskar', icon: 'meditation', screen: 'GarbhSanskar', gradient: ['#A78BFA', '#7C3AED'], subtitle: 'Daily rituals' },
+  { id: '2', title: 'Weekly Tips', icon: 'note-text-outline', screen: 'WeeklyTips', gradient: ['#FF4D8D', '#D6336C'], subtitle: 'Week guide' },
+  { id: '3', title: 'Symptoms', icon: 'stethoscope', screen: 'Symptoms', gradient: ['#22D3EE', '#0891B2'], subtitle: 'Track health' },
+  { id: '4', title: 'Baby Names', icon: 'baby-face-outline', screen: 'BabyNames', gradient: ['#FBBF24', '#F59E0B'], subtitle: 'Find names' },
+  { id: '5', title: 'Nutrition', icon: 'food-apple-outline', screen: 'Nutrition', gradient: ['#34D399', '#059669'], subtitle: 'Diet plans' },
+  { id: '6', title: 'Exercise', icon: 'yoga', screen: 'Exercise', gradient: ['#818CF8', '#4F46E5'], subtitle: 'Safe yoga' },
+  { id: '7', title: 'Products', icon: 'shopping-outline', screen: 'Products', gradient: ['#FB7185', '#E11D48'], subtitle: 'Essentials' },
+  { id: '8', title: 'Premium', icon: 'crown-outline', screen: 'Premium', gradient: ['#FCD34D', '#F59E0B'], subtitle: 'Unlock all' },
+  { id: '9', title: 'Community', icon: 'account-group-outline', screen: 'Community', gradient: ['#60A5FA', '#2563EB'], subtitle: 'Connect' },
+  { id: '10', title: 'Appointment', icon: 'calendar-check-outline', screen: 'Appointment', gradient: ['#4ADE80', '#16A34A'], subtitle: 'Book doctor' },
+  { id: '11', title: 'Growth', icon: 'chart-timeline-variant', screen: 'GrowthTracking', gradient: ['#F472B6', '#DB2777'], subtitle: 'Baby progress' },
 ];
 
-// --- Sub-components (memoized) ---
+// --- Sub-components ---
 
+// Glowing Feature Card
 interface FeatureCardProps {
   item: FeatureItem;
   index: number;
@@ -151,16 +116,20 @@ interface FeatureCardProps {
 
 const FeatureCard = React.memo(({ item, index, onPress }: FeatureCardProps) => {
   const scaleAnim = useSharedValue(1);
+  const glowAnim = useSharedValue(0);
 
   const gesture = Gesture.Tap()
     .onBegin(() => {
-      scaleAnim.value = withSpring(0.94);
+      scaleAnim.value = withSpring(0.95, { damping: 15 });
+      glowAnim.value = withTiming(1, { duration: 200 });
     })
     .onFinalize(() => {
-      scaleAnim.value = withSpring(1);
+      scaleAnim.value = withSpring(1, { damping: 15 });
+      glowAnim.value = withTiming(0, { duration: 300 });
     })
     .onEnd(() => {
-      onPress();
+      'worklet';
+      runOnJS(onPress)();
     });
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -170,68 +139,88 @@ const FeatureCard = React.memo(({ item, index, onPress }: FeatureCardProps) => {
   return (
     <GestureDetector gesture={gesture}>
       <Animated.View
-        style={[
-          styles.featureCard,
-          animatedStyle,
-          index === 0 && styles.featureCardFeatured,
-        ]}
+        entering={FadeInDown.delay(index * 40).duration(400).springify()}
+        style={[styles.featureCard, animatedStyle]}
       >
         <LinearGradient
-          colors={item.gradientColors}
-          style={styles.featureIconContainer}
+          colors={item.gradient}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
+          style={styles.featureIconContainer}
         >
-          <Icon name={item.icon} size={moderateScale(30)} color="#fff" />
+          <Icon name={item.icon} size={moderateScale(22)} color="#FFF" />
         </LinearGradient>
-        <Text style={styles.featureTitle} numberOfLines={1}>
-          {item.title}
-        </Text>
-        {item.subtitle && (
+
+        <View style={styles.featureTextContainer}>
+          <Text style={styles.featureTitle} numberOfLines={1}>
+            {item.title}
+          </Text>
           <Text style={styles.featureSubtitle} numberOfLines={1}>
             {item.subtitle}
           </Text>
-        )}
-        {index === 0 && (
-          <View style={styles.featuredBadge}>
-            <Text style={styles.featuredBadgeText}>Popular</Text>
-          </View>
-        )}
+        </View>
+
+        <View style={styles.featureArrowWrap}>
+          <Icon name="arrow-top-right" size={moderateScale(14)} color={THEME.textTertiary} />
+        </View>
       </Animated.View>
     </GestureDetector>
   );
 });
 
+// Quick Action with glow
 interface QuickActionProps {
   icon: string;
   label: string;
   onPress: () => void;
-  colors: string[];
+  color: string;
+  glow: string;
 }
 
-const QuickAction = React.memo(({ icon, label, onPress, colors }: QuickActionProps) => {
+const QuickAction = React.memo(({ icon, label, onPress, color, glow }: QuickActionProps) => {
   const scaleAnim = useSharedValue(1);
+  const glowOpacity = useSharedValue(0.15);
+
+  useEffect(() => {
+    glowOpacity.value = withRepeat(
+      withSequence(
+        withTiming(0.4, { duration: 2000, easing: Easing.inOut(Easing.ease) }),
+        withTiming(0.15, { duration: 2000, easing: Easing.inOut(Easing.ease) }),
+      ),
+      -1,
+      true,
+    );
+  }, []);
+
   const gesture = Gesture.Tap()
-    .onBegin(() => { scaleAnim.value = withSpring(0.92); })
+    .onBegin(() => { scaleAnim.value = withSpring(0.9); })
     .onFinalize(() => { scaleAnim.value = withSpring(1); })
-    .onEnd(() => { onPress(); });
+    .onEnd(() => { 'worklet'; runOnJS(onPress)(); });
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scaleAnim.value }],
   }));
 
+  const glowStyle = useAnimatedStyle(() => ({
+    opacity: glowOpacity.value,
+  }));
+
   return (
     <GestureDetector gesture={gesture}>
       <Animated.View style={[styles.quickActionCard, animatedStyle]}>
-        <LinearGradient
-          colors={colors}
-          style={styles.quickActionIcon}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-        >
-          <Icon name={icon} size={moderateScale(28)} color="#fff" />
-        </LinearGradient>
-        <Text style={styles.quickActionText}>{label}</Text>
+        <View style={styles.quickActionIconWrap}>
+          <Animated.View
+            style={[
+              styles.quickActionGlow,
+              { backgroundColor: glow },
+              glowStyle,
+            ]}
+          />
+          <View style={[styles.quickActionIconInner, { backgroundColor: THEME.bgGlassStrong }]}>
+            <Icon name={icon} size={moderateScale(22)} color={color} />
+          </View>
+        </View>
+        <Text style={styles.quickActionText} numberOfLines={2}>{label}</Text>
       </Animated.View>
     </GestureDetector>
   );
@@ -241,13 +230,35 @@ const QuickAction = React.memo(({ icon, label, onPress, colors }: QuickActionPro
 
 const HomeScreen = () => {
   const navigation = useNavigation<HomeScreenNavigationProp>();
-  const { width, height } = useWindowDimensions();
+  const { width } = useWindowDimensions();
+  const { user, token } = useAuth();
+  const [profile, setProfile] = useState<any>(null);
 
-  // Responsive breakpoints
-  const isSmallDevice = width < 375;
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (!token) return;
+      try {
+        const response = await fetch(
+          'https://api.hiranyagarbhsanskar.co/hiranyagarbha/users/get',
+          {
+            method: 'GET',
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          },
+        );
+        const data = await response.json();
+        if (response.ok && data.success) setProfile(data.data || data);
+      } catch (err) {
+        console.error('Failed to fetch profile:', err);
+      }
+    };
+    fetchProfile();
+  }, [token]);
+
   const isTablet = width >= 768;
 
-  // Current date & greeting
   const currentDate = new Date();
   const greeting =
     currentDate.getHours() < 12
@@ -258,761 +269,924 @@ const HomeScreen = () => {
 
   const formatDate = (date: Date) => {
     const options: Intl.DateTimeFormatOptions = {
-      weekday: 'long',
+      weekday: 'short',
       month: 'short',
       day: 'numeric',
     };
     return date.toLocaleDateString('en-US', options);
   };
 
-  // Memoize feature list to avoid re-renders
+  const p = profile || user || {};
+  const pregnancyWeek = p.pregnancyWeek ? parseInt(String(p.pregnancyWeek)) : null;
+  const dueDateStr = p.dueDate
+    ? new Date(p.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    : 'Oct 15';
+  const currentWeek = pregnancyWeek || 24;
+  const babyWeightGrams = Math.round(100 + currentWeek * 25);
+  const babyWeight =
+    babyWeightGrams >= 1000
+      ? `${(babyWeightGrams / 1000).toFixed(1)}kg`
+      : `${babyWeightGrams}g`;
+
+  const dailyTips = [
+    { title: 'Stay Hydrated', text: 'Drink 8-10 glasses of water daily to maintain amniotic fluid levels and support fetal development.' },
+    { title: 'Gentle Exercise', text: 'A 30-minute walk daily improves circulation, reduces back pain, and boosts mood.' },
+    { title: 'Prenatal Vitamins', text: 'Take folic acid and calcium as prescribed for your baby\'s brain and bone development.' },
+    { title: 'Talk to Baby', text: 'Your baby can hear your voice from week 24. Read or sing daily to strengthen your bond.' },
+  ];
+  const dayOfYear = Math.floor(
+    (currentDate.getTime() - new Date(currentDate.getFullYear(), 0, 0).getTime()) / 86400000,
+  );
+  const dailyTip = dailyTips[dayOfYear % dailyTips.length];
+
   const featureData = useMemo(() => pregnancyFeatures, []);
 
-  // Handlers
-  const handleFeaturePress = (screen: keyof RootStackParamList) => {
-    navigation.navigate(screen);
-  };
+  const handleFeaturePress = (screen: keyof RootStackParamList) => navigation.navigate(screen);
+  const handleQuickAction = (screen: keyof RootStackParamList) => navigation.navigate(screen);
 
-  const handleQuickAction = (screen: keyof RootStackParamList) => {
-    navigation.navigate(screen);
-  };
-
-  // Render feature card
   const renderFeature = ({ item, index }: { item: FeatureItem; index: number }) => (
-    <FeatureCard
-      item={item}
-      index={index}
-      onPress={() => handleFeaturePress(item.screen)}
-    />
+    <FeatureCard item={item} index={index} onPress={() => handleFeaturePress(item.screen)} />
   );
 
+  const progressPercent = Math.min((currentWeek / 40) * 100, 100);
+
   return (
-    <ScrollView
-      style={styles.container}
-      showsVerticalScrollIndicator={false}
-      contentContainerStyle={styles.contentContainer}
-    >
-      <StatusBar barStyle="light-content" backgroundColor="#D6336C" />
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor={THEME.bg} />
 
-      {/* --- Header --- */}
-      <LinearGradient
-        colors={['#D6336C', '#F06292', '#F8B4C2']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.headerSection}
+      {/* Ambient Aurora Background */}
+      <View style={styles.auroraContainer} pointerEvents="none">
+        <View style={[styles.auroraBlob, styles.auroraRose]} />
+        <View style={[styles.auroraBlob, styles.auroraViolet]} />
+        <View style={[styles.auroraBlob, styles.auroraCyan]} />
+      </View>
+
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.contentContainer}
       >
-        <View style={styles.headerContent}>
-          <View style={styles.headerTop}>
-            <View>
-              <Text style={styles.greetingText}>{greeting}! 👋</Text>
-              <Text style={styles.headerTitle}>Welcome to HiranyaGarbha</Text>
-            </View>
-            <View style={styles.headerRight}>
-              {/* User Avatar */}
-              <TouchableOpacity style={styles.avatarWrapper}>
-                <LinearGradient
-                  colors={['#FFD700', '#FFA500']}
-                  style={styles.avatarGradient}
-                >
-                  <Text style={styles.avatarText}>HG</Text>
-                </LinearGradient>
-              </TouchableOpacity>
-              {/* Notification Bell */}
-              <TouchableOpacity style={styles.notificationButton}>
-                <LinearGradient
-                  colors={['rgba(255,255,255,0.25)', 'rgba(255,255,255,0.15)']}
-                  style={styles.notificationGradient}
-                >
-                  <Icon name="bell-outline" size={moderateScale(22)} color="#fff" />
-                </LinearGradient>
-                <View style={styles.notificationBadge}>
-                  <Text style={styles.notificationBadgeText}>3</Text>
-                </View>
-              </TouchableOpacity>
-            </View>
-          </View>
-          <Text style={styles.dateText}>{formatDate(currentDate)}</Text>
-          <Text style={styles.subtitleText}>
-            India's Most Trusted Garbhsanskar Community
-          </Text>
-        </View>
-
-        {/* Search Bar */}
-        <TouchableOpacity style={styles.searchBar} activeOpacity={0.8}>
-          <Icon name="magnify" size={moderateScale(22)} color="#999" />
-          <Text style={styles.searchPlaceholder}>
-            Search features, tips, doctors...
-          </Text>
-        </TouchableOpacity>
-      </LinearGradient>
-
-      {/* --- Stats Cards --- */}
-      <View style={styles.statsSection}>
-        <View style={styles.statsCard}>
-          <LinearGradient
-            colors={['#FF6B6B', '#FF8E8E']}
-            style={styles.statIconWrapper}
-          >
-            <Icon name="calendar-week" size={moderateScale(24)} color="#fff" />
-          </LinearGradient>
-          <View style={styles.statInfo}>
-            <Text style={styles.statValue}>24th</Text>
-            <Text style={styles.statLabel}>Current Week</Text>
-          </View>
-          <View style={styles.statTrend}>
-            <Text style={styles.trendIcon}>📈</Text>
-          </View>
-        </View>
-
-        <View style={styles.statsCard}>
-          <LinearGradient
-            colors={['#4ECDC4', '#6EE7DE']}
-            style={styles.statIconWrapper}
-          >
-            <Icon name="weight" size={moderateScale(24)} color="#fff" />
-          </LinearGradient>
-          <View style={styles.statInfo}>
-            <Text style={styles.statValue}>600g</Text>
-            <Text style={styles.statLabel}>Baby Weight</Text>
-          </View>
-          <View style={styles.statTrend}>
-            <Text style={styles.trendIcon}>📈</Text>
-          </View>
-        </View>
-
-        <View style={styles.statsCard}>
-          <LinearGradient
-            colors={['#A78BFA', '#C4B5FD']}
-            style={styles.statIconWrapper}
-          >
-            <Icon name="target" size={moderateScale(24)} color="#fff" />
-          </LinearGradient>
-          <View style={styles.statInfo}>
-            <Text style={styles.statValue}>Oct 15</Text>
-            <Text style={styles.statLabel}>Due Date</Text>
-          </View>
-          <View style={styles.statTrend}>
-            <Text style={styles.trendIcon}>⏳</Text>
-          </View>
-        </View>
-      </View>
-
-      {/* --- Quick Actions --- */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Quick Actions</Text>
-          <TouchableOpacity>
-            <Text style={styles.seeAllText}>See All</Text>
-          </TouchableOpacity>
-        </View>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.quickActionsContainer}
-        >
-          <QuickAction
-            icon="calendar-check"
-            label="Book Appointment"
-            onPress={() => handleQuickAction('Appointment')}
-            colors={['#FF6B6B', '#FF8E8E']}
-          />
-          <QuickAction
-            icon="shopping"
-            label="Shop Now"
-            onPress={() => handleQuickAction('Products')}
-            colors={['#4ECDC4', '#6EE7DE']}
-          />
-          <QuickAction
-            icon="crown"
-            label="Go Premium"
-            onPress={() => handleQuickAction('Premium')}
-            colors={['#F59E0B', '#FBBF24']}
-          />
-          <QuickAction
-            icon="chat"
-            label="Contact Us"
-            onPress={() => handleQuickAction('ContactUs')}
-            colors={['#A78BFA', '#C4B5FD']}
-          />
-        </ScrollView>
-      </View>
-
-      {/* --- Features Grid --- */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>✨ Features</Text>
-          <TouchableOpacity>
-            <Text style={styles.seeAllText}>See All</Text>
-          </TouchableOpacity>
-        </View>
-        <FlatList
-          data={featureData}
-          keyExtractor={(item) => item.id}
-          numColumns={isTablet ? 3 : 2}
-          renderItem={renderFeature}
-          columnWrapperStyle={styles.columnWrapper}
-          scrollEnabled={false} // since inside ScrollView
-          key={isTablet ? 'tablet' : 'phone'} // force re-render on numColumns change
-        />
-      </View>
-
-      {/* --- Premium Banner --- */}
-      <LinearGradient
-        colors={['#1a1a2e', '#16213e', '#0f3460']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.premiumBanner}
-      >
-        <View style={styles.premiumContent}>
-          <View style={styles.premiumHeader}>
-            <LinearGradient
-              colors={['#F59E0B', '#FBBF24']}
-              style={styles.premiumIconWrapper}
+        {/* --- FLOATING HEADER --- */}
+        <Animated.View entering={FadeInDown.duration(600)} style={styles.header}>
+          <View style={styles.headerRow}>
+            <TouchableOpacity
+              style={styles.avatar}
+              onPress={() => navigation.navigate('MyProfile' as any)}
+              activeOpacity={0.7}
             >
-              <Icon name="crown" size={moderateScale(28)} color="#1a1a2e" />
-            </LinearGradient>
-            <View style={styles.premiumBadgeRow}>
-              <View style={styles.premiumBadge}>
-                <Text style={styles.premiumBadgeText}>PREMIUM</Text>
-              </View>
-              <View style={styles.premiumBadgeSecondary}>
-                <Text style={styles.premiumBadgeSecondaryText}>Save 40%</Text>
-              </View>
+              <LinearGradient
+                colors={[THEME.rose, THEME.violet]}
+                style={styles.avatarGradient}
+              >
+                <Text style={styles.avatarText}>
+                  {p?.name ? p.name.charAt(0).toUpperCase() : 'HG'}
+                </Text>
+              </LinearGradient>
+              <View style={styles.onlineDot} />
+            </TouchableOpacity>
+
+            <View style={{ flex: 1, marginLeft: scale(12) }}>
+              <Text style={styles.greetingText}>{greeting}</Text>
+              <Text style={styles.headerTitle} numberOfLines={1}>
+                {p?.name ? p.name.split(' ')[0] : 'Welcome'}
+              </Text>
             </View>
+
+            <TouchableOpacity
+              style={styles.iconButton}
+              onPress={() => handleFeaturePress('Notification')}
+              activeOpacity={0.7}
+            >
+              <Icon name="bell-outline" size={moderateScale(20)} color={THEME.textPrimary} />
+              <View style={styles.notificationBadge}>
+                <Text style={styles.notificationBadgeText}>3</Text>
+              </View>
+            </TouchableOpacity>
           </View>
 
-          <Text style={styles.premiumTitle}>Unlock Complete Garbh Sanskar</Text>
-          <Text style={styles.premiumText}>
-            Get Hiranyagarbha Book and Daily 25+ Activities for Unborn Child's PQ,
-            IQ, EQ, & SQ Development
-          </Text>
-
-          <View style={styles.premiumFeatures}>
-            <View style={styles.premiumFeatureItem}>
-              <Text style={styles.premiumFeatureIcon}>✓</Text>
-              <Text style={styles.premiumFeatureText}>100+ Exclusive Videos</Text>
+          {/* Date + Streak pill */}
+          <View style={styles.dateRow}>
+            <View style={styles.datePill}>
+              <Icon name="calendar-blank-outline" size={moderateScale(12)} color={THEME.textSecondary} />
+              <Text style={styles.datePillText}>{formatDate(currentDate)}</Text>
             </View>
-            <View style={styles.premiumFeatureItem}>
-              <Text style={styles.premiumFeatureIcon}>✓</Text>
-              <Text style={styles.premiumFeatureText}>Expert Sessions</Text>
-            </View>
-            <View style={styles.premiumFeatureItem}>
-              <Text style={styles.premiumFeatureIcon}>✓</Text>
-              <Text style={styles.premiumFeatureText}>Personalized Guidance</Text>
+            <View style={styles.streakPill}>
+              <Text style={styles.streakEmoji}>🔥</Text>
+              <Text style={styles.streakText}>12 day streak</Text>
             </View>
           </View>
+        </Animated.View>
 
-          <TouchableOpacity style={styles.premiumButton} activeOpacity={0.8}>
+        {/* --- HERO PREGNANCY CARD --- */}
+        <Animated.View entering={FadeInDown.delay(100).duration(600).springify()} style={styles.heroWrapper}>
+          <View style={styles.heroCard}>
+            {/* Gradient Border Effect */}
             <LinearGradient
-              colors={['#F59E0B', '#FBBF24']}
-              style={styles.premiumButtonGradient}
+              colors={['rgba(255,77,141,0.6)', 'rgba(167,139,250,0.4)', 'rgba(34,211,238,0.3)']}
               start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.heroGradientBorder}
             >
-              <Text style={styles.premiumButtonText}>Get Premium Now →</Text>
-            </LinearGradient>
-          </TouchableOpacity>
-        </View>
-      </LinearGradient>
+              <View style={styles.heroInner}>
+                {/* Header Row */}
+                <View style={styles.heroTopRow}>
+                  <View>
+                    <Text style={styles.heroLabel}>CURRENT WEEK</Text>
+                    <View style={styles.heroWeekRow}>
+                      <Text style={styles.heroWeekNumber}>{currentWeek}</Text>
+                      <Text style={styles.heroWeekSlash}>/40</Text>
+                    </View>
+                  </View>
 
-      {/* --- Daily Tip --- */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>💡 Daily Tip</Text>
-        </View>
-        <LinearGradient
-          colors={['#fff5f7', '#ffe4e9']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.tipCard}
-        >
-          <View style={styles.tipHeader}>
-            <LinearGradient
-              colors={['#D6336C', '#F06292']}
-              style={styles.tipIconWrapper}
-            >
-              <Icon name="lightbulb-on" size={moderateScale(22)} color="#fff" />
+                  <View style={styles.heroBadgeWrap}>
+                    <LinearGradient
+                      colors={['rgba(52,211,153,0.2)', 'rgba(52,211,153,0.1)']}
+                      style={styles.heroBadge}
+                    >
+                      <View style={styles.heroBadgeDot} />
+                      <Text style={styles.heroBadgeText}>On Track</Text>
+                    </LinearGradient>
+                  </View>
+                </View>
+
+                {/* Circular Progress + Floating Baby */}
+                <View style={styles.heroMid}>
+                  <View style={styles.progressCircleWrap}>
+                    <View style={styles.progressCircleOuter}>
+                      <LinearGradient
+                        colors={[THEME.rose, THEME.violet, THEME.cyan]}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={[
+                          styles.progressCircleFill,
+                          { height: `${progressPercent}%` },
+                        ]}
+                      />
+                    </View>
+                    <View style={styles.progressCircleInner}>
+                      <Icon name="baby-face-outline" size={moderateScale(28)} color={THEME.rose} />
+                    </View>
+                  </View>
+
+                  <View style={styles.heroStatsColumn}>
+                    <View style={styles.heroStatBlock}>
+                      <Text style={styles.heroStatLabel}>Baby Weight</Text>
+                      <Text style={styles.heroStatValue}>{babyWeight}</Text>
+                    </View>
+                    <View style={styles.heroStatDivider} />
+                    <View style={styles.heroStatBlock}>
+                      <Text style={styles.heroStatLabel}>Due Date</Text>
+                      <Text style={styles.heroStatValue}>{dueDateStr}</Text>
+                    </View>
+                  </View>
+                </View>
+
+                {/* Bottom Progress Bar */}
+                <View style={styles.heroBottomBar}>
+                  <View style={styles.heroBottomTrack}>
+                    <LinearGradient
+                      colors={[THEME.rose, THEME.violet]}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 0 }}
+                      style={[styles.heroBottomFill, { width: `${progressPercent}%` }]}
+                    />
+                  </View>
+                  <Text style={styles.heroBottomLabel}>
+                    {40 - currentWeek} weeks to go
+                  </Text>
+                </View>
+              </View>
             </LinearGradient>
-            <View>
-              <Text style={styles.tipTitle}>Stay Hydrated</Text>
-              <Text style={styles.tipSubtitle}>Tip of the day</Text>
-            </View>
           </View>
-          <Text style={styles.tipText}>
-            Drink at least 8-10 glasses of water daily. Proper hydration helps
-            maintain amniotic fluid levels and supports fetal development.
-          </Text>
-        </LinearGradient>
-      </View>
+        </Animated.View>
 
-      <View style={styles.bottomSpacing} />
-    </ScrollView>
+        {/* --- QUICK ACTIONS --- */}
+        <Animated.View entering={FadeInDown.delay(200).duration(500)} style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Quick Actions</Text>
+          </View>
+
+          <View style={styles.quickActionsGrid}>
+            <QuickAction
+              icon="calendar-check-outline"
+              label="Appointment"
+              onPress={() => handleQuickAction('Appointment')}
+              color={THEME.rose}
+              glow={THEME.roseGlow}
+            />
+            <QuickAction
+              icon="shopping-outline"
+              label="Shop"
+              onPress={() => handleQuickAction('Products')}
+              color={THEME.mint}
+              glow={THEME.mintGlow}
+            />
+            <QuickAction
+              icon="crown-outline"
+              label="Premium"
+              onPress={() => handleQuickAction('Premium')}
+              color={THEME.amber}
+              glow={THEME.amberGlow}
+            />
+            <QuickAction
+              icon="chat-processing-outline"
+              label="Support"
+              onPress={() => handleQuickAction('ContactUs')}
+              color={THEME.violet}
+              glow={THEME.violetGlow}
+            />
+          </View>
+        </Animated.View>
+
+        {/* --- FEATURES --- */}
+        <Animated.View entering={FadeInDown.delay(300).duration(500)} style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Explore</Text>
+            <TouchableOpacity>
+              <Text style={styles.seeAllText}>See all →</Text>
+            </TouchableOpacity>
+          </View>
+
+          <FlatList
+            data={featureData}
+            keyExtractor={(item) => item.id}
+            numColumns={isTablet ? 3 : 2}
+            renderItem={renderFeature}
+            columnWrapperStyle={styles.columnWrapper}
+            scrollEnabled={false}
+            key={isTablet ? 'tablet' : 'phone'}
+          />
+        </Animated.View>
+
+        {/* --- DAILY TIP (Glass Card) --- */}
+        <Animated.View entering={FadeInDown.delay(400).duration(500)} style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Today's Tip</Text>
+          </View>
+
+          <View style={styles.tipCard}>
+            <LinearGradient
+              colors={['rgba(251,191,36,0.15)', 'rgba(251,191,36,0.02)']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.tipGradient}
+            >
+              <View style={styles.tipHeader}>
+                <View style={styles.tipIconWrap}>
+                  <Icon name="lightbulb-on" size={moderateScale(18)} color={THEME.amber} />
+                </View>
+                <Text style={styles.tipTitle}>{dailyTip.title}</Text>
+              </View>
+              <Text style={styles.tipText}>{dailyTip.text}</Text>
+
+              <TouchableOpacity style={styles.tipCTA} activeOpacity={0.7}>
+                <Text style={styles.tipCTAText}>Read more</Text>
+                <Icon name="arrow-right" size={moderateScale(14)} color={THEME.amber} />
+              </TouchableOpacity>
+            </LinearGradient>
+          </View>
+        </Animated.View>
+
+        {/* --- PREMIUM BANNER --- */}
+        <Animated.View entering={FadeInDown.delay(500).duration(500)} style={styles.section}>
+          <View style={styles.premiumWrapper}>
+            <LinearGradient
+              colors={['#1E1B4B', '#312E81', '#4C1D95']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.premiumBanner}
+            >
+              {/* Decorative circles */}
+              <View style={styles.premiumDecor1} />
+              <View style={styles.premiumDecor2} />
+
+              <View style={styles.premiumTopRow}>
+                <LinearGradient
+                  colors={[THEME.amber, '#F59E0B']}
+                  style={styles.premiumIconWrap}
+                >
+                  <Icon name="crown" size={moderateScale(18)} color="#1E1B4B" />
+                </LinearGradient>
+                <View style={styles.premiumBadge}>
+                  <Text style={styles.premiumBadgeText}>PREMIUM</Text>
+                </View>
+              </View>
+
+              <Text style={styles.premiumTitle}>
+                Unlock Complete{'\n'}Garbh Sanskar
+              </Text>
+              <Text style={styles.premiumText}>
+                Daily activities, expert sessions & personalized guidance.
+              </Text>
+
+              <View style={styles.premiumChipsRow}>
+                {['100+ Videos', 'Expert', '24/7'].map((f, i) => (
+                  <View key={i} style={styles.premiumChip}>
+                    <Text style={styles.premiumChipText}>{f}</Text>
+                  </View>
+                ))}
+              </View>
+
+              <TouchableOpacity style={styles.premiumButton} activeOpacity={0.85}>
+                <LinearGradient
+                  colors={[THEME.amber, '#F59E0B']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.premiumButtonGradient}
+                >
+                  <Text style={styles.premiumButtonText}>Upgrade Now</Text>
+                  <Icon name="arrow-right" size={moderateScale(16)} color="#1E1B4B" />
+                </LinearGradient>
+              </TouchableOpacity>
+            </LinearGradient>
+          </View>
+        </Animated.View>
+
+        <View style={{ height: verticalScale(40) }} />
+      </ScrollView>
+    </View>
   );
 };
 
-// --- Styles (fully responsive) ---
+// --- Styles ---
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F8F9FA',
+  container: { flex: 1, backgroundColor: THEME.bg },
+  contentContainer: { paddingBottom: verticalScale(20) },
+
+  // Aurora Background
+  auroraContainer: {
+    ...StyleSheet.absoluteFillObject,
+    overflow: 'hidden',
   },
-  contentContainer: {
-    paddingBottom: verticalScale(24),
+  auroraBlob: {
+    position: 'absolute',
+    width: scale(300),
+    height: scale(300),
+    borderRadius: scale(150),
   },
-  headerSection: {
+  auroraRose: {
+    backgroundColor: THEME.roseGlow,
+    top: -scale(100),
+    left: -scale(80),
+    opacity: 0.4,
+  },
+  auroraViolet: {
+    backgroundColor: THEME.violetGlow,
+    top: scale(200),
+    right: -scale(120),
+    opacity: 0.3,
+  },
+  auroraCyan: {
+    backgroundColor: THEME.cyanGlow,
+    bottom: scale(100),
+    left: -scale(100),
+    opacity: 0.2,
+  },
+
+  // Header
+  header: {
     paddingTop: Platform.OS === 'ios' ? verticalScale(60) : verticalScale(40),
-    paddingBottom: verticalScale(30),
     paddingHorizontal: scale(20),
-    borderBottomLeftRadius: moderateScale(32),
-    borderBottomRightRadius: moderateScale(32),
-    elevation: 8,
-    shadowColor: '#D6336C',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
+    paddingBottom: verticalScale(16),
   },
-  headerContent: {
-    marginBottom: verticalScale(16),
-  },
-  headerTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: verticalScale(10),
-  },
-  headerRight: {
+  headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: scale(12),
+    marginBottom: verticalScale(14),
   },
-  greetingText: {
-    fontSize: moderateScale(14),
-    color: 'rgba(255,255,255,0.9)',
-    marginBottom: verticalScale(4),
-    fontWeight: '500',
-  },
-  headerTitle: {
-    fontSize: moderateScale(26),
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    textShadowColor: 'rgba(0,0,0,0.1)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 3,
-  },
-  avatarWrapper: {
-    marginRight: scale(6),
-  },
+  avatar: { position: 'relative' },
   avatarGradient: {
-    width: moderateScale(40),
-    height: moderateScale(40),
-    borderRadius: moderateScale(20),
-    justifyContent: 'center',
+    width: moderateScale(46),
+    height: moderateScale(46),
+    borderRadius: moderateScale(16),
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.5)',
+    justifyContent: 'center',
   },
   avatarText: {
-    fontSize: moderateScale(16),
-    fontWeight: 'bold',
-    color: '#1a1a2e',
+    fontSize: moderateScale(17),
+    fontWeight: '800',
+    color: '#FFF',
+    letterSpacing: -0.5,
   },
-  notificationButton: {
-    position: 'relative',
+  onlineDot: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    width: moderateScale(12),
+    height: moderateScale(12),
+    borderRadius: 6,
+    backgroundColor: THEME.mint,
+    borderWidth: 2,
+    borderColor: THEME.bg,
   },
-  notificationGradient: {
+  greetingText: {
+    fontSize: moderateScale(12),
+    color: THEME.textSecondary,
+    fontWeight: '500',
+    marginBottom: verticalScale(2),
+  },
+  headerTitle: {
+    fontSize: moderateScale(22),
+    fontWeight: '800',
+    color: THEME.textPrimary,
+    letterSpacing: -0.6,
+  },
+  iconButton: {
     width: moderateScale(44),
     height: moderateScale(44),
-    borderRadius: moderateScale(22),
-    justifyContent: 'center',
-    alignItems: 'center',
+    borderRadius: moderateScale(14),
+    backgroundColor: THEME.bgGlass,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
+    borderColor: THEME.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
   },
   notificationBadge: {
     position: 'absolute',
-    top: -2,
-    right: -2,
-    backgroundColor: '#FF4444',
-    borderRadius: 10,
-    minWidth: moderateScale(20),
-    height: moderateScale(20),
-    justifyContent: 'center',
+    top: moderateScale(8),
+    right: moderateScale(8),
+    minWidth: moderateScale(16),
+    height: moderateScale(16),
+    borderRadius: 8,
+    backgroundColor: THEME.rose,
     alignItems: 'center',
+    justifyContent: 'center',
     paddingHorizontal: scale(4),
     borderWidth: 2,
-    borderColor: '#D6336C',
+    borderColor: THEME.bg,
   },
   notificationBadgeText: {
-    color: '#FFFFFF',
-    fontSize: moderateScale(10),
-    fontWeight: 'bold',
+    fontSize: moderateScale(8),
+    color: '#FFF',
+    fontWeight: '800',
   },
-  dateText: {
-    fontSize: moderateScale(14),
-    color: 'rgba(255,255,255,0.85)',
-    marginBottom: verticalScale(4),
-    fontWeight: '500',
+
+  // Date + Streak row
+  dateRow: {
+    flexDirection: 'row',
+    gap: scale(8),
+    alignItems: 'center',
   },
-  subtitleText: {
-    fontSize: moderateScale(13),
-    color: 'rgba(255,255,255,0.9)',
-    lineHeight: verticalScale(20),
-  },
-  searchBar: {
+  datePill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.95)',
-    borderRadius: moderateScale(16),
-    paddingHorizontal: scale(16),
-    paddingVertical: verticalScale(12),
-    marginTop: verticalScale(8),
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-  },
-  searchPlaceholder: {
-    fontSize: moderateScale(14),
-    color: '#999',
-    marginLeft: scale(10),
-  },
-  statsSection: {
-    flexDirection: 'row',
-    paddingHorizontal: scale(16),
-    marginTop: -verticalScale(20),
-    gap: scale(12),
-  },
-  statsCard: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-    borderRadius: moderateScale(20),
-    padding: moderateScale(14),
-    alignItems: 'center',
-    elevation: 6,
-    shadowColor: '#D6336C',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.12,
-    shadowRadius: 10,
+    gap: scale(6),
+    backgroundColor: THEME.bgGlass,
     borderWidth: 1,
-    borderColor: '#FFE4E9',
+    borderColor: THEME.border,
+    paddingHorizontal: scale(10),
+    paddingVertical: verticalScale(6),
+    borderRadius: moderateScale(10),
   },
-  statIconWrapper: {
-    width: moderateScale(44),
-    height: moderateScale(44),
-    borderRadius: moderateScale(22),
-    justifyContent: 'center',
+  datePillText: {
+    fontSize: moderateScale(11),
+    color: THEME.textSecondary,
+    fontWeight: '600',
+  },
+  streakPill: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: scale(4),
+    backgroundColor: 'rgba(251,191,36,0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(251,191,36,0.25)',
+    paddingHorizontal: scale(10),
+    paddingVertical: verticalScale(6),
+    borderRadius: moderateScale(10),
+  },
+  streakEmoji: { fontSize: moderateScale(11) },
+  streakText: {
+    fontSize: moderateScale(11),
+    color: THEME.amber,
+    fontWeight: '700',
+  },
+
+  // Hero Card
+  heroWrapper: {
+    paddingHorizontal: scale(20),
+    marginTop: verticalScale(8),
+  },
+  heroCard: {
+    borderRadius: moderateScale(24),
+    overflow: 'hidden',
+    shadowColor: THEME.rose,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.3,
+    shadowRadius: 24,
+    elevation: 12,
+  },
+  heroGradientBorder: {
+    padding: 1.5,
+    borderRadius: moderateScale(24),
+  },
+  heroInner: {
+    backgroundColor: '#0F0F1A',
+    borderRadius: moderateScale(22.5),
+    padding: moderateScale(20),
+  },
+  heroTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: verticalScale(20),
+  },
+  heroLabel: {
+    fontSize: moderateScale(10),
+    color: THEME.textTertiary,
+    fontWeight: '700',
+    letterSpacing: 1.5,
+    marginBottom: verticalScale(6),
+  },
+  heroWeekRow: { flexDirection: 'row', alignItems: 'baseline' },
+  heroWeekNumber: {
+    fontSize: moderateScale(44),
+    fontWeight: '900',
+    color: '#FFF',
+    letterSpacing: -2,
+    lineHeight: moderateScale(46),
+  },
+  heroWeekSlash: {
+    fontSize: moderateScale(18),
+    fontWeight: '700',
+    color: THEME.textTertiary,
+    marginLeft: scale(2),
+  },
+  heroBadgeWrap: {},
+  heroBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: scale(6),
+    paddingHorizontal: scale(10),
+    paddingVertical: verticalScale(6),
+    borderRadius: moderateScale(20),
+    borderWidth: 1,
+    borderColor: 'rgba(52,211,153,0.3)',
+  },
+  heroBadgeDot: {
+    width: moderateScale(6),
+    height: moderateScale(6),
+    borderRadius: 3,
+    backgroundColor: THEME.mint,
+  },
+  heroBadgeText: {
+    fontSize: moderateScale(10),
+    color: THEME.mint,
+    fontWeight: '700',
+  },
+
+  // Hero Mid
+  heroMid: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: scale(20),
+    marginBottom: verticalScale(20),
+  },
+  progressCircleWrap: {
+    width: moderateScale(90),
+    height: moderateScale(90),
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  progressCircleOuter: {
+    position: 'absolute',
+    width: moderateScale(90),
+    height: moderateScale(90),
+    borderRadius: moderateScale(45),
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    overflow: 'hidden',
+    justifyContent: 'flex-end',
+    borderWidth: 1,
+    borderColor: THEME.border,
+  },
+  progressCircleFill: {
+    width: '100%',
+    opacity: 0.6,
+  },
+  progressCircleInner: {
+    width: moderateScale(60),
+    height: moderateScale(60),
+    borderRadius: moderateScale(30),
+    backgroundColor: THEME.bgElevated,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: THEME.borderStrong,
+  },
+
+  heroStatsColumn: {
+    flex: 1,
+    gap: verticalScale(12),
+  },
+  heroStatBlock: {},
+  heroStatLabel: {
+    fontSize: moderateScale(10),
+    color: THEME.textTertiary,
+    fontWeight: '600',
+    letterSpacing: 0.8,
+    marginBottom: verticalScale(4),
+  },
+  heroStatValue: {
+    fontSize: moderateScale(20),
+    fontWeight: '800',
+    color: THEME.textPrimary,
+    letterSpacing: -0.5,
+  },
+  heroStatDivider: {
+    height: 1,
+    backgroundColor: THEME.border,
+  },
+
+  // Hero Bottom
+  heroBottomBar: {},
+  heroBottomTrack: {
+    height: verticalScale(4),
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderRadius: moderateScale(2),
+    overflow: 'hidden',
     marginBottom: verticalScale(8),
   },
-  statInfo: {
-    alignItems: 'center',
+  heroBottomFill: {
+    height: '100%',
+    borderRadius: moderateScale(2),
   },
-  statValue: {
-    fontSize: moderateScale(16),
-    fontWeight: 'bold',
-    color: '#1a1a2e',
-    marginBottom: verticalScale(2),
+  heroBottomLabel: {
+    fontSize: moderateScale(11),
+    color: THEME.textSecondary,
+    fontWeight: '600',
+    textAlign: 'right',
   },
-  statLabel: {
-    fontSize: moderateScale(10),
-    color: '#666',
-    textAlign: 'center',
-    lineHeight: verticalScale(14),
-  },
-  statTrend: {
-    marginTop: verticalScale(6),
-    paddingHorizontal: scale(8),
-    paddingVertical: verticalScale(2),
-    backgroundColor: '#FFF5F7',
-    borderRadius: moderateScale(12),
-  },
-  trendIcon: {
-    fontSize: moderateScale(12),
-  },
+
+  // Sections
   section: {
-    paddingHorizontal: scale(16),
+    paddingHorizontal: scale(20),
     marginTop: verticalScale(28),
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: verticalScale(16),
+    marginBottom: verticalScale(14),
   },
   sectionTitle: {
-    fontSize: moderateScale(20),
-    fontWeight: '700',
-    color: '#1a1a2e',
-    letterSpacing: -0.3,
+    fontSize: moderateScale(17),
+    fontWeight: '800',
+    color: THEME.textPrimary,
+    letterSpacing: -0.4,
   },
   seeAllText: {
-    fontSize: moderateScale(14),
-    color: '#D6336C',
-    fontWeight: '600',
+    fontSize: moderateScale(12),
+    color: THEME.rose,
+    fontWeight: '700',
   },
-  quickActionsContainer: {
-    gap: scale(12),
-    paddingRight: scale(4),
+
+  // Quick Actions Grid
+  quickActionsGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: scale(8),
   },
   quickActionCard: {
+    flex: 1,
     alignItems: 'center',
-    minWidth: scale(80),
-  },
-  quickActionIcon: {
-    width: moderateScale(56),
-    height: moderateScale(56),
-    borderRadius: moderateScale(28),
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: verticalScale(6),
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-  },
-  quickActionText: {
-    fontSize: moderateScale(11),
-    color: '#444',
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  columnWrapper: {
-    justifyContent: 'space-between',
-    marginBottom: verticalScale(12),
-  },
-  featureCard: {
-    width: '48%', // will be controlled by FlatList column wrapper
-    backgroundColor: '#FFFFFF',
-    borderRadius: moderateScale(20),
-    padding: moderateScale(14),
-    alignItems: 'center',
-    marginBottom: verticalScale(10),
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
+    paddingVertical: verticalScale(12),
+    backgroundColor: THEME.bgGlass,
+    borderRadius: moderateScale(18),
     borderWidth: 1,
-    borderColor: '#F0F0F0',
+    borderColor: THEME.border,
+  },
+  quickActionIconWrap: {
     position: 'relative',
-  },
-  featureCardFeatured: {
-    borderWidth: 2,
-    borderColor: '#D6336C',
-    backgroundColor: '#FFF5F7',
-  },
-  featureIconContainer: {
-    width: moderateScale(60),
-    height: moderateScale(60),
-    borderRadius: moderateScale(30),
+    width: moderateScale(48),
+    height: moderateScale(48),
+    alignItems: 'center',
     justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: verticalScale(10),
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    marginBottom: verticalScale(8),
   },
-  featureTitle: {
-    fontSize: moderateScale(13),
-    fontWeight: '600',
-    color: '#222',
-    textAlign: 'center',
-    marginBottom: verticalScale(2),
-  },
-  featureSubtitle: {
-    fontSize: moderateScale(10),
-    color: '#888',
-    textAlign: 'center',
-    lineHeight: verticalScale(14),
-  },
-  featuredBadge: {
+  quickActionGlow: {
     position: 'absolute',
-    top: moderateScale(8),
-    right: moderateScale(8),
-    backgroundColor: '#D6336C',
-    paddingHorizontal: scale(8),
-    paddingVertical: verticalScale(2),
-    borderRadius: moderateScale(10),
-  },
-  featuredBadgeText: {
-    fontSize: moderateScale(9),
-    color: '#FFF',
-    fontWeight: '700',
-    letterSpacing: 0.5,
-  },
-  premiumBanner: {
-    marginHorizontal: scale(16),
-    marginTop: verticalScale(8),
-    borderRadius: moderateScale(24),
-    overflow: 'hidden',
-    elevation: 8,
-    shadowColor: '#0f3460',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-  },
-  premiumContent: {
-    padding: moderateScale(24),
-    alignItems: 'center',
-  },
-  premiumHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: verticalScale(16),
-    width: '100%',
-    justifyContent: 'space-between',
-  },
-  premiumIconWrapper: {
     width: moderateScale(48),
     height: moderateScale(48),
     borderRadius: moderateScale(24),
-    justifyContent: 'center',
+  },
+  quickActionIconInner: {
+    width: moderateScale(44),
+    height: moderateScale(44),
+    borderRadius: moderateScale(14),
     alignItems: 'center',
-    elevation: 3,
-    shadowColor: '#F59E0B',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.4,
-    shadowRadius: 6,
-  },
-  premiumBadgeRow: {
-    flexDirection: 'row',
-    gap: scale(8),
-  },
-  premiumBadge: {
-    backgroundColor: '#F59E0B',
-    paddingHorizontal: scale(12),
-    paddingVertical: verticalScale(6),
-    borderRadius: moderateScale(16),
-  },
-  premiumBadgeText: {
-    fontSize: moderateScale(10),
-    color: '#FFF',
-    fontWeight: '800',
-    letterSpacing: 1,
-  },
-  premiumBadgeSecondary: {
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    paddingHorizontal: scale(10),
-    paddingVertical: verticalScale(6),
-    borderRadius: moderateScale(16),
+    justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
+    borderColor: THEME.borderStrong,
   },
-  premiumBadgeSecondaryText: {
-    fontSize: moderateScale(10),
-    color: '#FFF',
+  quickActionText: {
+    fontSize: moderateScale(10.5),
+    color: THEME.textPrimary,
     fontWeight: '700',
+    textAlign: 'center',
+    letterSpacing: -0.2,
   },
-  premiumTitle: {
-    fontSize: moderateScale(20),
-    fontWeight: 'bold',
-    color: '#FFFFFF',
+
+  // Feature Cards
+  columnWrapper: {
+    justifyContent: 'space-between',
     marginBottom: verticalScale(10),
-    textAlign: 'center',
-    letterSpacing: -0.3,
   },
-  premiumText: {
-    fontSize: moderateScale(13),
-    color: 'rgba(255,255,255,0.85)',
-    textAlign: 'center',
-    marginBottom: verticalScale(20),
-    lineHeight: verticalScale(22),
-    paddingHorizontal: scale(8),
-  },
-  premiumFeatures: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    gap: scale(8),
-    marginBottom: verticalScale(24),
-  },
-  premiumFeatureItem: {
+  featureCard: {
+    width: '48.5%',
+    backgroundColor: THEME.bgGlass,
+    borderRadius: moderateScale(18),
+    padding: moderateScale(12),
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    paddingHorizontal: scale(12),
-    paddingVertical: verticalScale(8),
-    borderRadius: moderateScale(20),
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
+    borderColor: THEME.border,
+    gap: scale(10),
   },
-  premiumFeatureIcon: {
-    color: '#FBBF24',
-    fontSize: moderateScale(14),
-    fontWeight: 'bold',
-    marginRight: scale(6),
-  },
-  premiumFeatureText: {
-    color: '#FFF',
-    fontSize: moderateScale(12),
-    fontWeight: '600',
-  },
-  premiumButton: {
-    borderRadius: moderateScale(30),
-    overflow: 'hidden',
-    width: '100%',
-    elevation: 4,
-    shadowColor: '#F59E0B',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-  },
-  premiumButtonGradient: {
-    paddingVertical: verticalScale(16),
+  featureIconContainer: {
+    width: moderateScale(38),
+    height: moderateScale(38),
+    borderRadius: moderateScale(12),
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  premiumButtonText: {
-    fontSize: moderateScale(16),
-    color: '#1a1a2e',
+  featureTextContainer: { flex: 1 },
+  featureTitle: {
+    fontSize: moderateScale(12.5),
     fontWeight: '700',
-    letterSpacing: 0.5,
+    color: THEME.textPrimary,
+    marginBottom: verticalScale(2),
+    letterSpacing: -0.2,
   },
+  featureSubtitle: {
+    fontSize: moderateScale(9.5),
+    color: THEME.textTertiary,
+    fontWeight: '500',
+  },
+  featureArrowWrap: {
+    width: moderateScale(20),
+    height: moderateScale(20),
+    borderRadius: moderateScale(6),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // Daily Tip
   tipCard: {
     borderRadius: moderateScale(20),
-    padding: moderateScale(20),
-    elevation: 3,
-    shadowColor: '#D6336C',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
+    overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#FFE4E9',
+    borderColor: 'rgba(251,191,36,0.2)',
   },
+  tipGradient: { padding: moderateScale(18) },
   tipHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: verticalScale(12),
+    gap: scale(10),
+    marginBottom: verticalScale(10),
   },
-  tipIconWrapper: {
-    width: moderateScale(40),
-    height: moderateScale(40),
-    borderRadius: moderateScale(20),
-    justifyContent: 'center',
+  tipIconWrap: {
+    width: moderateScale(34),
+    height: moderateScale(34),
+    borderRadius: moderateScale(10),
+    backgroundColor: 'rgba(251,191,36,0.15)',
     alignItems: 'center',
-    marginRight: scale(12),
+    justifyContent: 'center',
   },
   tipTitle: {
-    fontSize: moderateScale(16),
-    fontWeight: '700',
-    color: '#1a1a2e',
-    marginBottom: verticalScale(2),
-  },
-  tipSubtitle: {
-    fontSize: moderateScale(12),
-    color: '#888',
+    fontSize: moderateScale(14),
+    fontWeight: '800',
+    color: THEME.textPrimary,
+    letterSpacing: -0.3,
   },
   tipText: {
-    fontSize: moderateScale(14),
-    color: '#555',
-    lineHeight: verticalScale(22),
+    fontSize: moderateScale(12.5),
+    color: THEME.textSecondary,
+    lineHeight: verticalScale(19),
+    marginBottom: verticalScale(12),
   },
-  bottomSpacing: {
-    height: verticalScale(24),
+  tipCTA: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: scale(6),
+    alignSelf: 'flex-start',
+  },
+  tipCTAText: {
+    fontSize: moderateScale(12),
+    color: THEME.amber,
+    fontWeight: '700',
+  },
+
+  // Premium Banner
+  premiumWrapper: {
+    borderRadius: moderateScale(24),
+    overflow: 'hidden',
+    shadowColor: '#4C1D95',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.4,
+    shadowRadius: 24,
+    elevation: 12,
+  },
+  premiumBanner: {
+    borderRadius: moderateScale(24),
+    padding: moderateScale(22),
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  premiumDecor1: {
+    position: 'absolute',
+    top: -scale(40),
+    right: -scale(40),
+    width: scale(140),
+    height: scale(140),
+    borderRadius: scale(70),
+    backgroundColor: 'rgba(251,191,36,0.08)',
+  },
+  premiumDecor2: {
+    position: 'absolute',
+    bottom: -scale(60),
+    left: -scale(40),
+    width: scale(180),
+    height: scale(180),
+    borderRadius: scale(90),
+    backgroundColor: 'rgba(255,77,141,0.06)',
+  },
+  premiumTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: verticalScale(16),
+  },
+  premiumIconWrap: {
+    width: moderateScale(42),
+    height: moderateScale(42),
+    borderRadius: moderateScale(12),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  premiumBadge: {
+    backgroundColor: 'rgba(251,191,36,0.15)',
+    paddingHorizontal: scale(10),
+    paddingVertical: verticalScale(5),
+    borderRadius: moderateScale(20),
+    borderWidth: 1,
+    borderColor: 'rgba(251,191,36,0.3)',
+  },
+  premiumBadgeText: {
+    fontSize: moderateScale(9),
+    color: THEME.amber,
+    fontWeight: '900',
+    letterSpacing: 1.2,
+  },
+  premiumTitle: {
+    fontSize: moderateScale(22),
+    fontWeight: '900',
+    color: '#FFF',
+    letterSpacing: -0.8,
+    lineHeight: moderateScale(26),
+    marginBottom: verticalScale(10),
+  },
+  premiumText: {
+    fontSize: moderateScale(12.5),
+    color: 'rgba(255,255,255,0.7)',
+    lineHeight: verticalScale(18),
+    marginBottom: verticalScale(16),
+  },
+  premiumChipsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: scale(8),
+    marginBottom: verticalScale(20),
+  },
+  premiumChip: {
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    paddingHorizontal: scale(12),
+    paddingVertical: verticalScale(6),
+    borderRadius: moderateScale(20),
+    borderWidth: 1,
+    borderColor: THEME.border,
+  },
+  premiumChipText: {
+    fontSize: moderateScale(10.5),
+    color: '#FFF',
+    fontWeight: '700',
+  },
+  premiumButton: {
+    borderRadius: moderateScale(16),
+    overflow: 'hidden',
+  },
+  premiumButtonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: verticalScale(15),
+    gap: scale(8),
+  },
+  premiumButtonText: {
+    fontSize: moderateScale(14),
+    fontWeight: '800',
+    color: '#1E1B4B',
+    letterSpacing: 0.3,
   },
 });
 

@@ -74,6 +74,10 @@ import NotificationService from './src/services/NotificationService';
 import { checkForUpdates, checkDismissedUpdate } from './src/Redux/UpdateActions';
 import UpdatePopup from './src/Components/UpdatePopup/UpdatePopup';
 import { AuthProvider } from './src/Context/AuthContext';
+import {
+  SafeAreaProvider,
+  initialWindowMetrics,
+} from 'react-native-safe-area-context';
 
 // Inner component that uses Redux hooks
 const AppContent: React.FC = () => {
@@ -110,8 +114,14 @@ function App(): React.JSX.Element {
         strings.setLanguage(storedLang);
       }
 
-      await NotificationService.requestUserPermission();
+      NotificationService.requestUserPermission()
+        .then(settings =>
+          console.log('Notification permission:', settings.authorizationStatus),
+        )
+        .catch(error => console.warn('Notification permission failed:', error));
+
       await NotificationService.createNotificationChannel();
+      await NotificationService.getFCMToken();
       NotificationService.setupNotificationListeners();
 
       // Check for dismissed updates
@@ -129,13 +139,15 @@ function App(): React.JSX.Element {
   const GestureWrappedApp = gestureHandlerRootHOC(AppContent);
 
  return (
-    <Provider store={store}>
-      <PersistGate loading={null} persistor={persistor}>
-        <AuthProvider>
-          <GestureWrappedApp />
-        </AuthProvider>
-      </PersistGate>
-    </Provider>
+    <SafeAreaProvider initialMetrics={initialWindowMetrics}>
+      <Provider store={store}>
+        <PersistGate loading={null} persistor={persistor}>
+          <AuthProvider>
+            <GestureWrappedApp />
+          </AuthProvider>
+        </PersistGate>
+      </Provider>
+    </SafeAreaProvider>
   );
 }
 

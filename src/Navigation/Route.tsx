@@ -24,12 +24,17 @@ import CommunityScreen from '../Screens/CommunityScreen';
 import AppointmentScreen from '../Screens/AppointmentScreen';
 import GrowthTrackingScreen from '../Screens/GrowthTrackingScreen';
 import MorningDashboardScreen from '../Screens/MorningDashboardScreen';
+import NotificationScreen from '../Screens/NotificationScreen';
 import { useAuth } from '../Context/AuthContext';
+import PlanDetailsScreen from '../Screens/PlanDetailsScreen';
+import CompleteProfileScreen from '../Screens/CompleteProfileScreen';
+import { Plan } from '../types/plan';
 
 export type RootStackParamList = {
   Splash: undefined;
   Login: undefined;
   OTP: { mobile: string; sessionId?: string };
+  CompleteProfile: undefined;
   MainTabs: undefined;
   Home: undefined;
   ProductPage: undefined;
@@ -51,14 +56,14 @@ export type RootStackParamList = {
   Appointment: undefined;
   GrowthTracking: undefined;
   MorningDashboard: undefined;
+  Notification: undefined;
+  PlanDetails: { plan: Plan };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
-
 const Route = () => {
   const [isLoading, setIsLoading] = useState(true);
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
-
+  const { isAuthenticated, isLoading: authLoading, needsProfile } = useAuth();
   const handleSplashFinish = () => {
     setIsLoading(false);
   };
@@ -67,11 +72,22 @@ const Route = () => {
     return <SplashScreen onFinish={handleSplashFinish} />;
   }
 
+  const initialRoute = !isAuthenticated
+    ? 'Login'
+    : needsProfile
+    ? 'CompleteProfile'
+    : 'MainTabs';
+
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName={isAuthenticated ? "MainTabs" : "Login"}>
+      <Stack.Navigator initialRouteName={initialRoute}>
         <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
         <Stack.Screen name="OTP" component={OTPScreen} options={{ headerShown: false }} />
+        <Stack.Screen
+          name="CompleteProfile"
+          component={CompleteProfileScreen}
+          options={{ headerShown: false, gestureEnabled: false }}
+        />
         <Stack.Screen name="MainTabs" component={TabNavigator} options={{ headerShown: false }} />
         <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
         <Stack.Screen name="ProductPage" component={ProductPage} options={{ headerShown: false }} />
@@ -92,6 +108,8 @@ const Route = () => {
         <Stack.Screen name="Appointment" component={AppointmentScreen} options={{ headerShown: false }} />
         <Stack.Screen name="GrowthTracking" component={GrowthTrackingScreen} options={{ headerShown: false }} />
         <Stack.Screen name="MorningDashboard" component={MorningDashboardScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="Notification" component={NotificationScreen} options={{ headerShown: false }} />
+           <Stack.Screen name="PlanDetails" component={PlanDetailsScreen} options={{ headerShown: false }} /> 
       </Stack.Navigator>
     </NavigationContainer>
   );
