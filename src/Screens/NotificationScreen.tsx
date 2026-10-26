@@ -29,7 +29,6 @@ const PAGE_SIZE = 20;
 const NotificationScreen = () => {
   const navigation = useNavigation();
   const { token } = useAuth();
-
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);

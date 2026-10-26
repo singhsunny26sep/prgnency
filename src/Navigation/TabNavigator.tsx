@@ -287,7 +287,7 @@ const TabNavigator = () => {
       <Tab.Screen name="HomeTab" component={HomeScreen} options={{ title: 'Home' }} />
       <Tab.Screen name="GarbhSanskar" component={GarbhSanskarPage} options={{ title: 'Sanskar' }} />
       <Tab.Screen name="Products" component={ProductPage} options={{ title: 'Shop' }} />
-      <Tab.Screen name="Community" component={CommunityScreen} options={{ title: 'Community' }} />
+      {/* <Tab.Screen name="Community" component={CommunityScreen} options={{ title: 'Community' }} /> */}
       <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profile' }} />
     
       

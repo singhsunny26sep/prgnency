@@ -1,3 +1,8 @@
+export interface PlanModule {
+  title: string;
+  description?: string;
+}
+
 export interface PlanOption {
   trimester: string;
   label: string;
@@ -30,7 +35,7 @@ export interface Plan {
   price: number;
   originalPrice?: number;
   plans: PlanOption[];
-  modules: string[];
+  modules: Array<string | PlanModule>;
   includes: string[];
   exclusiveBenefits: string[];
   premiumFeatures?: PremiumFeatures;

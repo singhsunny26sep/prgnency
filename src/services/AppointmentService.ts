@@ -160,8 +160,8 @@ export const formatTimeInZone = (
   if (!shifted) {
     return '';
   }
-  const hours = shifted.getHours();
-  const minutes = shifted.getMinutes();
+  const hours = shifted.getUTCHours();
+  const minutes = shifted.getUTCMinutes();
   const period = hours >= 12 ? 'PM' : 'AM';
   const h12 = hours % 12 === 0 ? 12 : hours % 12;
   return `${String(h12).padStart(2, '0')}:${String(minutes).padStart(
@@ -179,6 +179,7 @@ export const formatDateInZone = (
     return '';
   }
   return shifted.toLocaleDateString('en-IN', {
+    timeZone: 'UTC',
     weekday: 'short',
     day: '2-digit',
     month: 'short',

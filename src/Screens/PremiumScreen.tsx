@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useRef} from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,18 +9,18 @@ import {
   Animated,
   Dimensions,
 } from 'react-native';
-import {useNavigation} from '@react-navigation/native';
-import {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import LinearGradient from 'react-native-linear-gradient';
-import {RootStackParamList} from '../Navigation/Route';
-import {Plan, PlanOption} from '../types/plan';
+import { RootStackParamList } from '../Navigation/Route';
+import { Plan, PlanOption } from '../types/plan';
 import strings from '../../localization';
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'Premium'>;
 
-export type {Plan, PlanOption};
+export type { Plan, PlanOption };
 
-const {width} = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
 const API_URL = `${'https://api.hiranyagarbhsanskar.co/hiranyagarbha'}/subscriptions/getAll`;
 
@@ -42,8 +42,25 @@ const colorForTier = (tier: string, index: number): string =>
   TIER_COLORS[(tier || '').toLowerCase()] ??
   FALLBACK_COLORS[index % FALLBACK_COLORS.length];
 
-const toStringArray = (value: any): string[] =>
-  Array.isArray(value) ? value.filter(v => v != null).map(String) : [];
+const toStringArray = (value: any): string[] => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return value
+    .map(v => {
+      if (v == null) {
+        return null;
+      }
+      if (typeof v === 'string') {
+        return v;
+      }
+      if (typeof v === 'object') {
+        return v.title || v.name || v.label || v.moduleName || null;
+      }
+      return String(v);
+    })
+    .filter((item): item is string => typeof item === 'string' && item.length > 0);
+};
 
 // ====== PLAN CARD (Summary only) ======
 const PlanCard = ({
@@ -79,15 +96,15 @@ const PlanCard = ({
   const discountPercent =
     plan.originalPrice && plan.originalPrice > plan.price
       ? Math.round(
-          ((plan.originalPrice - plan.price) / plan.originalPrice) * 100,
-        )
+        ((plan.originalPrice - plan.price) / plan.originalPrice) * 100,
+      )
       : 0;
 
   return (
     <Animated.View
       style={[
         styles.planCardWrapper,
-        {opacity: fadeAnim, transform: [{translateY: slideAnim}]},
+        { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
       ]}
     >
       <TouchableOpacity activeOpacity={0.95} onPress={onViewDetails}>
@@ -97,8 +114,8 @@ const PlanCard = ({
             <View style={styles.popularRibbon}>
               <LinearGradient
                 colors={['#EC4899', '#D6336C']}
-                start={{x: 0, y: 0}}
-                end={{x: 1, y: 0}}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
                 style={styles.popularRibbonGradient}
               >
                 <Text style={styles.popularRibbonText}>
@@ -111,8 +128,8 @@ const PlanCard = ({
           {/* Header */}
           <LinearGradient
             colors={[plan.color, plan.color + 'CC']}
-            start={{x: 0, y: 0}}
-            end={{x: 1, y: 1}}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
             style={styles.planHeader}
           >
             <View style={styles.decorCircle1} />
@@ -188,8 +205,8 @@ const PlanCard = ({
             >
               <LinearGradient
                 colors={[plan.color, plan.color + 'CC']}
-                start={{x: 0, y: 0}}
-                end={{x: 1, y: 0}}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
                 style={styles.buttonGradient}
               >
                 <Text style={styles.viewDetailsText}>View Details</Text>
@@ -235,10 +252,10 @@ const PremiumScreen = () => {
           const batch = Array.isArray(body?.data)
             ? body.data
             : Array.isArray(body)
-            ? body
-            : Array.isArray(body?.packages)
-            ? body.packages
-            : [];
+              ? body
+              : Array.isArray(body?.packages)
+                ? body.packages
+                : [];
 
           collected.push(...batch);
           totalPages = body?.totalPages || 1;
@@ -325,8 +342,8 @@ const PremiumScreen = () => {
       >
         <LinearGradient
           colors={['#D6336C', '#EC4899', '#F8B4C2']}
-          start={{x: 0, y: 0}}
-          end={{x: 1, y: 1}}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
           style={styles.header}
         >
           <TouchableOpacity
@@ -383,7 +400,7 @@ const PremiumScreen = () => {
                 plan={plan}
                 index={index}
                 onViewDetails={() =>
-                  navigation.navigate('PlanDetails', {plan})
+                  navigation.navigate('PlanDetails', { plan })
                 }
               />
             ))}
@@ -400,7 +417,7 @@ const PremiumScreen = () => {
                     plan={plan}
                     index={index}
                     onViewDetails={() =>
-                      navigation.navigate('PlanDetails', {plan})
+                      navigation.navigate('PlanDetails', { plan })
                     }
                   />
                 ))}
@@ -409,7 +426,7 @@ const PremiumScreen = () => {
           </>
         )}
 
-        <View style={{height: 30}} />
+        <View style={{ height: 30 }} />
       </ScrollView>
     </View>
   );
@@ -419,7 +436,7 @@ export default PremiumScreen;
 
 // ============ STYLES ============
 const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: '#FFF5F7'},
+  container: { flex: 1, backgroundColor: '#FFF5F7' },
   bgBlob1: {
     position: 'absolute', top: -80, right: -80, width: 220, height: 220,
     borderRadius: 110, backgroundColor: '#F8B4C2', opacity: 0.25,
@@ -428,39 +445,37 @@ const styles = StyleSheet.create({
     position: 'absolute', top: 200, left: -100, width: 180, height: 180,
     borderRadius: 90, backgroundColor: '#D6336C', opacity: 0.08,
   },
-
-  headerWrapper: {zIndex: 10},
+  headerWrapper: { zIndex: 10 },
   header: {
     flexDirection: 'row', alignItems: 'center', paddingTop: 50,
     paddingBottom: 24, paddingHorizontal: 16, borderBottomLeftRadius: 32,
     borderBottomRightRadius: 32, overflow: 'hidden', elevation: 8,
-    shadowColor: '#D6336C', shadowOffset: {width: 0, height: 4},
+    shadowColor: '#D6336C', shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3, shadowRadius: 12,
   },
   backButton: {
     padding: 8, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.2)',
     width: 42, height: 42, justifyContent: 'center', alignItems: 'center',
   },
-  backIcon: {fontSize: 22, color: '#FFFFFF', fontWeight: '600'},
-  headerTitleWrapper: {flex: 1, marginLeft: 14},
-  headerTitle: {fontSize: 22, fontWeight: '700', color: '#FFFFFF'},
-  headerSubtitle: {fontSize: 12, color: '#FFFFFF', opacity: 0.85, marginTop: 2},
+  backIcon: { fontSize: 22, color: '#FFFFFF', fontWeight: '600' },
+  headerTitleWrapper: { flex: 1, marginLeft: 14 },
+  headerTitle: { fontSize: 22, fontWeight: '700', color: '#FFFFFF' },
+  headerSubtitle: { fontSize: 12, color: '#FFFFFF', opacity: 0.85, marginTop: 2 },
   crownBadge: {
     width: 42, height: 42, borderRadius: 21,
     backgroundColor: 'rgba(255,255,255,0.25)',
     justifyContent: 'center', alignItems: 'center',
   },
-  crownEmoji: {fontSize: 22},
+  crownEmoji: { fontSize: 22 },
 
-  content: {flex: 1},
-  scrollContent: {paddingHorizontal: 16, paddingTop: 20},
-
-  sectionTitleWrapper: {alignItems: 'center', marginBottom: 20},
-  sectionTitle: {fontSize: 22, fontWeight: '800', color: '#1F2937'},
+  content: { flex: 1 },
+  scrollContent: { paddingHorizontal: 16, paddingTop: 20 },
+  sectionTitleWrapper: { alignItems: 'center', marginBottom: 20 },
+  sectionTitle: { fontSize: 22, fontWeight: '800', color: '#1F2937' },
   sectionTitleUnderline: {
     width: 50, height: 4, backgroundColor: '#D6336C', borderRadius: 2, marginTop: 8,
   },
-  sectionCount: {fontSize: 12, color: '#9CA3AF', marginTop: 8},
+  sectionCount: { fontSize: 12, color: '#9CA3AF', marginTop: 8 },
   groupLabel: {
     fontSize: 17,
     fontWeight: '800',
@@ -474,20 +489,20 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
 
-  planCardWrapper: {marginBottom: 20},
+  planCardWrapper: { marginBottom: 20 },
   planCard: {
     backgroundColor: '#FFFFFF', borderRadius: 24, overflow: 'hidden', elevation: 6,
-    shadowColor: '#000', shadowOffset: {width: 0, height: 6},
+    shadowColor: '#000', shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.12, shadowRadius: 16,
   },
   popularRibbon: {
     position: 'absolute', top: 0, right: 0, zIndex: 10,
     borderBottomLeftRadius: 16, overflow: 'hidden',
   },
-  popularRibbonGradient: {paddingHorizontal: 16, paddingVertical: 8},
-  popularRibbonText: {color: '#FFFFFF', fontSize: 11, fontWeight: '800'},
+  popularRibbonGradient: { paddingHorizontal: 16, paddingVertical: 8 },
+  popularRibbonText: { color: '#FFFFFF', fontSize: 11, fontWeight: '800' },
 
-  planHeader: {padding: 24, alignItems: 'center', overflow: 'hidden'},
+  planHeader: { padding: 24, alignItems: 'center', overflow: 'hidden' },
   decorCircle1: {
     position: 'absolute', top: -40, right: -40, width: 140, height: 140,
     borderRadius: 70, backgroundColor: '#FFFFFF', opacity: 0.12,
@@ -497,7 +512,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12, paddingVertical: 4,
     borderRadius: 12, marginBottom: 8,
   },
-  tierChipText: {color: '#FFFFFF', fontSize: 10, fontWeight: '800', letterSpacing: 1.5},
+  tierChipText: { color: '#FFFFFF', fontSize: 10, fontWeight: '800', letterSpacing: 1.5 },
   planName: {
     fontSize: 22, fontWeight: '800', color: '#FFFFFF', textAlign: 'center',
   },
@@ -505,17 +520,17 @@ const styles = StyleSheet.create({
     fontSize: 12, color: '#FFFFFF', opacity: 0.9,
     fontStyle: 'italic', marginTop: 4,
   },
-  priceRow: {flexDirection: 'row', alignItems: 'flex-end', marginTop: 12},
+  priceRow: { flexDirection: 'row', alignItems: 'flex-end', marginTop: 12 },
   currency: {
     fontSize: 20, color: '#FFFFFF', opacity: 0.9,
     marginRight: 2, fontWeight: '600', marginBottom: 6,
   },
-  price: {fontSize: 40, fontWeight: '900', color: '#FFFFFF'},
+  price: { fontSize: 40, fontWeight: '900', color: '#FFFFFF' },
   period: {
     fontSize: 13, color: '#FFFFFF', opacity: 0.85,
     marginLeft: 6, marginBottom: 8,
   },
-  originalPriceRow: {flexDirection: 'row', alignItems: 'center', marginTop: 4},
+  originalPriceRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
   originalPrice: {
     fontSize: 13, color: '#FFFFFF', opacity: 0.7,
     textDecorationLine: 'line-through', marginRight: 8,
@@ -524,9 +539,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#10B981', paddingHorizontal: 8, paddingVertical: 2,
     borderRadius: 8,
   },
-  discountText: {color: '#FFFFFF', fontSize: 10, fontWeight: '800'},
+  discountText: { color: '#FFFFFF', fontSize: 10, fontWeight: '800' },
 
-  planContent: {padding: 20},
+  planContent: { padding: 20 },
   description: {
     fontSize: 13, color: '#4B5563', lineHeight: 19, marginBottom: 14,
     fontStyle: 'italic',
@@ -535,10 +550,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row', backgroundColor: '#FFF5F7',
     borderRadius: 14, paddingVertical: 12, marginBottom: 14,
   },
-  statItem: {flex: 1, alignItems: 'center'},
-  statNumber: {fontSize: 18, fontWeight: '800', color: '#D6336C'},
-  statLabel: {fontSize: 11, color: '#6B7280', marginTop: 2},
-  statDivider: {width: 1, backgroundColor: '#F3D4DC'},
+  statItem: { flex: 1, alignItems: 'center' },
+  statNumber: { fontSize: 18, fontWeight: '800', color: '#D6336C' },
+  statLabel: { fontSize: 11, color: '#6B7280', marginTop: 2 },
+  statDivider: { width: 1, backgroundColor: '#F3D4DC' },
 
   viewDetailsButton: {
     borderRadius: 14, overflow: 'hidden',
@@ -547,12 +562,12 @@ const styles = StyleSheet.create({
     paddingVertical: 14, flexDirection: 'row',
     alignItems: 'center', justifyContent: 'center',
   },
-  viewDetailsText: {fontSize: 15, color: '#FFFFFF', fontWeight: '800'},
-  buttonArrow: {fontSize: 16, color: '#FFFFFF', fontWeight: '800', marginLeft: 8},
+  viewDetailsText: { fontSize: 15, color: '#FFFFFF', fontWeight: '800' },
+  buttonArrow: { fontSize: 16, color: '#FFFFFF', fontWeight: '800', marginLeft: 8 },
 
-  loadingContainer: {padding: 60, alignItems: 'center'},
-  loadingText: {marginTop: 14, fontSize: 14, color: '#6B7280'},
-  emptyContainer: {padding: 60, alignItems: 'center'},
-  emptyEmoji: {fontSize: 48, marginBottom: 12},
-  emptyText: {fontSize: 14, color: '#6B7280'},
+  loadingContainer: { padding: 60, alignItems: 'center' },
+  loadingText: { marginTop: 14, fontSize: 14, color: '#6B7280' },
+  emptyContainer: { padding: 60, alignItems: 'center' },
+  emptyEmoji: { fontSize: 48, marginBottom: 12 },
+  emptyText: { fontSize: 14, color: '#6B7280' },
 });

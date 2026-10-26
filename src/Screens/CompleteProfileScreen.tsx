@@ -156,7 +156,7 @@ const MUTED = '#8A8A8A';
 const BORDER = '#E4E4E4';
 const SURFACE = '#FFFFFF';
 const PAGE_BG = '#FFF5F7';
-const BRAND = 'HiranyaGarbha Sanskar';
+const BRAND = 'Hiranyagarbh Garbhasanskar';
 
 const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 const TRIMESTERS = [

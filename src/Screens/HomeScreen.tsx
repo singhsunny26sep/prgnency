@@ -9,7 +9,10 @@ import {
   FlatList,
   useWindowDimensions,
   Platform,
+  Linking,
+  Alert,
   Animated as RNAnimated,
+  Image,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -32,6 +35,8 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { scale, moderateScale, verticalScale } from 'react-native-size-matters';
 import { useAuth } from '../Context/AuthContext';
 import { fetchUnreadCount } from '../services/NotificationService';
+
+const WHATSAPP_NUMBER = '+918551074369';
 
 // --- Types ---
 type RootStackParamList = {
@@ -101,7 +106,6 @@ const pregnancyFeatures: FeatureItem[] = [
   { id: '6', title: 'Exercise', icon: 'yoga', screen: 'Exercise', gradient: ['#818CF8', '#4F46E5'], subtitle: 'Safe yoga' },
   { id: '7', title: 'Products', icon: 'shopping-outline', screen: 'Products', gradient: ['#FB7185', '#E11D48'], subtitle: 'Essentials' },
   { id: '8', title: 'Premium', icon: 'crown-outline', screen: 'Premium', gradient: ['#FCD34D', '#F59E0B'], subtitle: 'Unlock all' },
-  { id: '9', title: 'Community', icon: 'account-group-outline', screen: 'Community', gradient: ['#60A5FA', '#2563EB'], subtitle: 'Connect' },
   { id: '10', title: 'Appointment', icon: 'calendar-check-outline', screen: 'Appointment', gradient: ['#4ADE80', '#16A34A'], subtitle: 'Book doctor' },
   { id: '11', title: 'Growth', icon: 'chart-timeline-variant', screen: 'GrowthTracking', gradient: ['#F472B6', '#DB2777'], subtitle: 'Baby progress' },
 ];
@@ -328,17 +332,35 @@ const HomeScreen = () => {
 
   const progressPercent = Math.min((currentWeek / 40) * 100, 100);
 
+  const openWhatsApp = () => {
+    const digits = WHATSAPP_NUMBER.replace(/\D/g, '');
+    const message = encodeURIComponent(
+      'Hello, I would like to know more about Hiranyagarbha Garbhsanskar.',
+    );
+    const whatsappUrl = `https://wa.me/${digits}?text=${message}`;
+
+    Linking.canOpenURL(whatsappUrl)
+      .then(supported => {
+        if (supported) {
+          return Linking.openURL(whatsappUrl);
+        }
+        Alert.alert('Error', 'WhatsApp is not installed on this device');
+      })
+      .catch(err => {
+        console.error('Could not open WhatsApp:', err);
+        Alert.alert('Error', 'Could not open WhatsApp');
+      });
+  };
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={THEME.bg} />
-
       {/* Ambient Aurora Background */}
       <View style={styles.auroraContainer} pointerEvents="none">
         <View style={[styles.auroraBlob, styles.auroraRose]} />
         <View style={[styles.auroraBlob, styles.auroraViolet]} />
         <View style={[styles.auroraBlob, styles.auroraCyan]} />
       </View>
-
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.contentContainer}
@@ -351,14 +373,9 @@ const HomeScreen = () => {
               onPress={() => navigation.navigate('MyProfile' as any)}
               activeOpacity={0.7}
             >
-              <LinearGradient
-                colors={[THEME.rose, THEME.violet]}
-                style={styles.avatarGradient}
-              >
-                <Text style={styles.avatarText}>
-                  {p?.name ? p.name.charAt(0).toUpperCase() : 'HG'}
-                </Text>
-              </LinearGradient>
+           
+                <Image resizeMode='contain' style={styles.avatarImage} source={require("../assets/img/LOGO.png")}/>
+           
               <View style={styles.onlineDot} />
             </TouchableOpacity>
 
@@ -496,13 +513,6 @@ const HomeScreen = () => {
               glow={THEME.roseGlow}
             />
             <QuickAction
-              icon="shopping-outline"
-              label="Shop"
-              onPress={() => handleQuickAction('Products')}
-              color={THEME.mint}
-              glow={THEME.mintGlow}
-            />
-            <QuickAction
               icon="crown-outline"
               label="Premium"
               onPress={() => handleQuickAction('Premium')}
@@ -515,6 +525,13 @@ const HomeScreen = () => {
               onPress={() => handleQuickAction('ContactUs')}
               color={THEME.violet}
               glow={THEME.violetGlow}
+            />
+            <QuickAction
+              icon="shopping-outline"
+              label="Shop"
+              onPress={() => handleQuickAction('Products')}
+              color={THEME.mint}
+              glow={THEME.mintGlow}
             />
           </View>
         </Animated.View>
@@ -625,6 +642,22 @@ const HomeScreen = () => {
 
         <View style={{ height: verticalScale(40) }} />
       </ScrollView>
+
+      {/* Floating WhatsApp button */}
+      <TouchableOpacity
+        style={styles.whatsappFab}
+        onPress={openWhatsApp}
+        activeOpacity={0.85}
+        accessibilityRole="button"
+        accessibilityLabel="Chat with us on WhatsApp">
+        <LinearGradient
+          colors={['#25D366', '#128C7E']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.whatsappFabGradient}>
+          <Icon name="whatsapp" size={moderateScale(30)} color="#FFFFFF" />
+        </LinearGradient>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -634,6 +667,27 @@ const HomeScreen = () => {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: THEME.bg },
   contentContainer: { paddingBottom: verticalScale(20) },
+
+  // Floating WhatsApp button, lifted clear of the floating tab bar.
+  whatsappFab: {
+    position: 'absolute',
+    right: scale(18),
+    bottom: verticalScale(10),
+    width: moderateScale(58),
+    height: moderateScale(58),
+    borderRadius: moderateScale(29),
+    elevation: 10,
+    shadowColor: '#25D366',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.45,
+    shadowRadius: 14,
+  },
+  whatsappFabGradient: {
+    flex: 1,
+    borderRadius: moderateScale(29),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 
   // Aurora Background
   auroraContainer: {
@@ -676,7 +730,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: verticalScale(14),
   },
-  avatar: { position: 'relative' },
+  avatar: { position: 'relative',
+    backgroundColor:"white",
+    padding: moderateScale(2),
+    borderRadius: moderateScale(5),
+   },
   avatarGradient: {
     width: moderateScale(46),
     height: moderateScale(46),
@@ -1210,6 +1268,11 @@ const styles = StyleSheet.create({
     color: '#1E1B4B',
     letterSpacing: 0.3,
   },
+  avatarImage:{
+    height: moderateScale(40),
+    width: moderateScale(40),
+    borderRadius: moderateScale(15),
+  }
 });
 
 export default HomeScreen;

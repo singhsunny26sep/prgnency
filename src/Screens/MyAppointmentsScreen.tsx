@@ -12,7 +12,6 @@ import {
   TextInput,
   Alert,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useAuth} from '../Context/AuthContext';
 import {
   Appointment,
@@ -30,6 +29,7 @@ import {
   rescheduleAppointment,
   toDateParam,
 } from '../services/AppointmentService';
+import {resolvePatientId} from '../services/PatientIdentityService';
 
 const PAGE_SIZE = 10;
 
@@ -65,7 +65,7 @@ const dateLabelOf = (
 };
 
 const MyAppointmentsScreen = ({navigation}: any) => {
-  const {user, token} = useAuth();
+  const {token} = useAuth();
 
   const [items, setItems] = useState<Appointment[]>([]);
   const [page, setPage] = useState(1);
@@ -108,12 +108,8 @@ const MyAppointmentsScreen = ({navigation}: any) => {
       setError(null);
 
       try {
-        let patientId = user?.id || user?._id || '';
-        if (!patientId) {
-          const stored = await AsyncStorage.getItem('@auth_user');
-          const parsed = stored ? JSON.parse(stored) : null;
-          patientId = parsed?.id || parsed?._id || '';
-        }
+        // Must be the Patient document id, not the auth user id.
+        const patientId = await resolvePatientId(token);
         if (!patientId) {
           throw new Error('Could not identify your account. Please log in again.');
         }
@@ -143,7 +139,7 @@ const MyAppointmentsScreen = ({navigation}: any) => {
         setRefreshing(false);
       }
     },
-    [token, user?.id, user?._id],
+    [token],
   );
 
   useEffect(() => {

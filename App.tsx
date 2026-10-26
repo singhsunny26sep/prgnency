@@ -132,12 +132,9 @@ function App(): React.JSX.Element {
         store.dispatch(checkForUpdates());
       }, 3000);
     };
-
     initializeApp();
   }, []);
-
   const GestureWrappedApp = gestureHandlerRootHOC(AppContent);
-
  return (
     <SafeAreaProvider initialMetrics={initialWindowMetrics}>
       <Provider store={store}>

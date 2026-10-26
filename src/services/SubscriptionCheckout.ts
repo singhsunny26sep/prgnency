@@ -132,9 +132,15 @@ const toStringList = (...values: any[]): string[] => {
   for (const value of values) {
     if (Array.isArray(value)) {
       return value
-        .map(item =>
-          typeof item === 'string' ? item : item?.title || item?.label || item?.name,
-        )
+        .map(item => {
+          if (typeof item === 'string') {
+            return item;
+          }
+          if (item && typeof item === 'object') {
+            return item?.title || item?.label || item?.name || item?.moduleName;
+          }
+          return null;
+        })
         .filter((item): item is string => typeof item === 'string' && item.length > 0);
     }
   }
@@ -414,10 +420,23 @@ const requestGet = async (
 
 const normalizePreview = (data: any): SubscriptionPreview => {
   const payload = pickPayload(data);
+
+  const pricing = payload.pricing || {};
+  const planNode = payload.plan || {};
+  const pkg = payload.package || {};
+  const currentPlan = payload.currentPlan;
+
   const amountInPaise = toNumber(payload.amountInPaise, payload.paise);
   const amount =
     (amountInPaise !== undefined ? amountInPaise / 100 : undefined) ??
     toNumber(
+      pricing.amountPayable,
+      pricing.payableAmount,
+      pricing.finalAmount,
+      pricing.totalAmount,
+      pricing.amount,
+      planNode.price,
+      planNode.amount,
       payload.amount,
       payload.payableAmount,
       payload.finalAmount,
@@ -425,28 +444,67 @@ const normalizePreview = (data: any): SubscriptionPreview => {
       payload.price,
     ) ??
     0;
+
   const originalAmount = toNumber(
+    pricing.listPrice,
+    pricing.originalAmount,
+    pricing.mrp,
+    pricing.baseAmount,
+    planNode.originalPrice,
+    planNode.listPrice,
     payload.originalAmount,
     payload.originalPrice,
     payload.mrp,
     payload.baseAmount,
   );
 
+  const features = toStringList(
+    pkg.includes,
+    pkg.modules?.map((m: any) => m?.title || m?.name || m),
+    pricing.features,
+    pricing.includedFeatures,
+    pricing.benefits,
+    planNode.features,
+    planNode.includes,
+    planNode.benefits,
+    payload.features,
+    payload.includedFeatures,
+    payload.benefits,
+    payload.includes,
+  );
+
+  const alreadySubscribed =
+    payload.alreadySubscribed === true ||
+    payload.isSubscribed === true ||
+    (currentPlan &&
+      payload.requiresPayment === false &&
+      amount === 0);
+
   return {
     amount,
     originalAmount:
       originalAmount && originalAmount > amount ? originalAmount : undefined,
-    currency: payload.currency || RAZORPAY_BRAND.currency,
-    durationInDays: toNumber(payload.durationInDays, payload.validityInDays),
-    label: payload.label || payload.trimesterLabel || payload.name,
-    isFree: payload.isFree ?? amount === 0,
-    features: toStringList(
-      payload.features,
-      payload.includedFeatures,
-      payload.benefits,
-      payload.includes,
+    currency:
+      pricing.currency ||
+      payload.currency ||
+      planNode.currency ||
+      RAZORPAY_BRAND.currency,
+    durationInDays: toNumber(
+      planNode.durationInDays,
+      pricing.durationInDays,
+      payload.durationInDays,
+      payload.validityInDays,
     ),
-    alreadySubscribed: !!(payload.alreadySubscribed || payload.isSubscribed),
+    label:
+      planNode.label ||
+      planNode.trimesterLabel ||
+      pkg.name ||
+      payload.label ||
+      payload.trimesterLabel ||
+      payload.name,
+    isFree: payload.isFree ?? (amount === 0),
+    features,
+    alreadySubscribed: !!alreadySubscribed,
     raw: payload,
   };
 };

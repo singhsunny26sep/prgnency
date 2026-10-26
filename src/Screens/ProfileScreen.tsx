@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useAuth } from '../Context/AuthContext';
@@ -260,8 +260,23 @@ const ProfileScreen = () => {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.backButton}
+        >
+          <Text style={styles.backIcon}>←</Text>
+        </TouchableOpacity>
+        <View style={styles.headerCenter}>
         <View style={styles.avatar}>
-          <Icon name="account" size={moderateScale(40)} color="#fff" />
+          {userProfile?.image ? (
+            <Image
+              source={{ uri: userProfile.image }}
+              style={styles.avatarImage}
+              resizeMode="cover"
+            />
+          ) : (
+            <Icon name="account" size={moderateScale(40)} color="#fff" />
+          )}
         </View>
         {loading ? (
           <ActivityIndicator color="#D6336C" />
@@ -271,6 +286,7 @@ const ProfileScreen = () => {
             <Text style={styles.userPhone}>{userPhone}</Text>
           </>
         )}
+        </View>
       </View>
 
       {!!error && (
@@ -349,10 +365,19 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   header: {
+    flexDirection: 'row',
     alignItems: 'center',
     padding: 24,
     backgroundColor: '#FFE4E9',
   },
+  headerCenter: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  backButton: {
+    padding: 8,
+  },
+  backIcon: { fontSize: 22, color: '#333', fontWeight: '600' },
   avatar: {
     width: 80,
     height: 80,
@@ -507,6 +532,11 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: '#999',
   },
+  avatarImage:{
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+  }
 });
 
 export default ProfileScreen;

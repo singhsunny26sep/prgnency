@@ -14,6 +14,99 @@ export interface UserProfile {
   [key: string]: any;
 }
 
+export interface UpdateProfilePayload {
+  name?: string;
+  address?: string;
+  email?: string;
+  mobile?: string;
+  dob?: string;
+  image?: any;
+}
+
+export interface UpdateProfileResponse {
+  success: boolean;
+  message?: string;
+  data?: any;
+}
+
+export const UPDATE_PROFILE_ENDPOINT = `${API_BASE}/users/update`;
+
+const ImagePicker = require('react-native-image-crop-picker');
+
+export const pickProfileImage = async (): Promise<any | null> => {
+  try {
+    const image = await ImagePicker.openPicker({
+      width: 500,
+      height: 500,
+      cropping: true,
+      compressImageQuality: 0.8,
+      mediaType: 'photo',
+      includeBase64: false,
+    });
+    return image;
+  } catch (error) {
+    return null;
+  }
+};
+
+export const updateUserProfile = async (
+  payload: UpdateProfilePayload,
+  token?: string | null,
+): Promise<UpdateProfileResponse> => {
+  const authToken = await getToken(token);
+  if (!authToken) {
+    throw new ProfileError('Please log in to continue.', 'EMPTY_TOKEN', 401);
+  }
+
+  const userId = (await getStoredUser())?.id || '';
+
+  const formData = new FormData();
+
+  if (payload.name) formData.append('name', payload.name);
+  if (payload.address) formData.append('address', payload.address);
+  if (payload.email) formData.append('email', payload.email);
+  if (payload.mobile) formData.append('mobile', payload.mobile);
+  if (payload.dob) formData.append('dob', payload.dob);
+  if (userId) formData.append('userId', userId);
+
+  if (payload.image) {
+    const image: any = payload.image;
+    formData.append('image', {
+      uri: image.path,
+      type: image.mime || 'image/jpeg',
+      name: image.filename || 'profile.jpg',
+    } as any);
+  }
+
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${authToken}`,
+  };
+
+  const url = userId
+    ? `${UPDATE_PROFILE_ENDPOINT}?userId=${encodeURIComponent(userId)}`
+    : UPDATE_PROFILE_ENDPOINT;
+
+  const response = await fetch(url, {
+    method: 'PUT',
+    headers,
+    body: formData,
+  });
+
+  const data = (await response.json().catch(() => null)) as
+    | UpdateProfileResponse
+    | null;
+
+  if (!response.ok || !data?.success) {
+    throw new ProfileError(
+      data?.message || `Profile update failed (${response.status})`,
+      response.status >= 500 ? 'SERVER_BROKEN' : 'SERVER_ERROR',
+      response.status,
+    );
+  }
+
+  return data;
+};
+
 export type ProfileErrorCode =
   | 'UNAUTHORIZED'
   | 'SERVER_ERROR'
@@ -147,6 +240,15 @@ export const fetchUserProfile = async (
         name: payload.name || payload.fullName || payload.userName,
         mobile: payload.mobile || payload.phone || payload.mobileNumber,
         email: payload.email || payload.emailAddress,
+        image:
+          payload.image ||
+          payload.profileImage ||
+          payload.avatar ||
+          payload.photo ||
+          payload.picture ||
+          payload.profilePic ||
+          payload.imageUrl ||
+          payload.profilePicture,
       };
 
       AsyncStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(profile)).catch(

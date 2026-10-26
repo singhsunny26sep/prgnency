@@ -12,6 +12,7 @@ import {
   Platform,
   ActivityIndicator,
   RefreshControl,
+  AppState,
 } from 'react-native';
 import Video from 'react-native-video';
 import { useNavigation } from '@react-navigation/native';
@@ -51,6 +52,20 @@ const GarbhSanskarPage = () => {
   const [playingVideoId, setPlayingVideoId] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const scrollY = useRef(new Animated.Value(0)).current;
+  const appState = useRef(AppState.currentState);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', nextAppState => {
+      if (appState.current.match(/active/) && nextAppState.match(/inactive|background/)) {
+        setPlayingVideoId(null);
+      }
+      appState.current = nextAppState;
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, []);
 
   // Fetch videos from API
   const fetchVideos = async () => {

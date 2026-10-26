@@ -20,6 +20,7 @@ import {
   toDateParam as formatDateParam,
   TimeSlot,
 } from '../services/AppointmentService';
+import {resolvePatientId} from '../services/PatientIdentityService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 const API_URL = 'https://api.hiranyagarbhsanskar.co/hiranyagarbha';
 const BOOKING_API = `${API_URL}/appointments/book`;
@@ -269,7 +270,7 @@ const AppointmentScreen = () => {
       );
       return;
     }
-    const effectiveUserId = user?.id || user?._id || profileUserId;
+    const effectiveUserId = await resolvePatientId(token);
     const [y, m, d] = selectedDate.split('-').map(Number);
     const slot = selectedTimeSlot!;
     const payload = {
